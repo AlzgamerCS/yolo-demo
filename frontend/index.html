@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>YOLO Studio · Live vision</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="YOLO Studio home"
+        ><span class="brand-icon">Y</span><span>YOLO <b>STUDIO</b></span></a
+      >
+      <div class="top-right">
+        <a
+          id="operatorLink"
+          href="/monitor"
+          target="_blank"
+          rel="noopener"
+          hidden
+          >Client monitor ↗</a
+        ><span class="local-tag">LOCAL VISION</span
+        ><span id="statusBadge" class="badge">● Idle</span>
+      </div>
+    </header>
+    <main>
+      <div class="heading">
+        <div>
+          <div class="eyebrow">YOUR CAMERA. YOUR MODELS.</div>
+          <h1>See the world in real time.</h1>
+          <p>Connect a camera, choose a model, and explore what it sees.</p>
+        </div>
+        <div class="session-label">
+          <span class="pulse-dot"></span>LIVE WORKSPACE
+        </div>
+      </div>
+      <div class="workspace">
+        <section class="view-column" aria-label="Live video and performance">
+          <div id="viewer" class="viewer">
+            <div class="viewer-bar">
+              <span id="sourceLabel">LAPTOP CAMERA</span
+              ><span id="resolution">—</span>
+            </div>
+            <img
+              id="video"
+              alt="Live camera preview with selected YOLO overlays"
+              hidden
+            />
+            <div id="empty" class="empty">
+              <svg
+                viewBox="0 0 48 48"
+                width="56"
+                height="56"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="6"
+                  y="12"
+                  width="27"
+                  height="24"
+                  rx="6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <path
+                  d="m33 20 9-5v18l-9-5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+              </svg>
+              <h2 id="emptyTitle">Your live view starts here</h2>
+              <p id="emptyText">Choose a source, then press Start preview.</p>
+            </div>
+            <div class="viewer-footer">
+              <span id="modeLabel">COMBINED VISION</span
+              ><button
+                id="fullscreen"
+                class="icon-button"
+                title="Toggle fullscreen (F)"
+              >
+                ⛶ <span>Fullscreen</span>
+              </button>
+            </div>
+          </div>
+          <div class="metrics">
+            <div>
+              <span>CAPTURE</span><strong id="captureFps">—</strong
+              ><small>frames / sec</small>
+            </div>
+            <div>
+              <span>PREVIEW</span><strong id="processFps">—</strong
+              ><small>frames / sec</small>
+            </div>
+            <div>
+              <span>INFERENCE</span><strong id="inferenceMs">—</strong
+              ><small>milliseconds</small>
+            </div>
+            <div
+              title="Time from decoding a frame on the laptop to publishing its preview; excludes delay inside the phone/network."
+            >
+              <span>FRAME AGE</span><strong id="frameAge">—</strong
+              ><small>milliseconds</small>
+            </div>
+          </div>
+          <div class="insights">
+            <div>
+              <span class="section-dot"></span>
+              <h2>Stream health</h2>
+              <span id="runtimeLabel" class="runtime-label"
+                >Ready when you are</span
+              >
+            </div>
+            <p id="healthText">
+              Try Raw preview to check the camera connection before adding
+              inference.
+            </p>
+            <div id="counts" class="counts"></div>
+          </div>
+          <div id="error" class="error" role="alert" hidden></div>
+        </section>
+        <aside class="controls">
+          <div class="controls-title">
+            <h2>Session controls</h2>
+            <span id="dirtyLabel">Set up your view</span>
+          </div>
+          <form id="configForm">
+            <fieldset>
+              <legend><span>01</span> Video source</legend>
+              <div class="source-tabs" role="group" aria-label="Camera source">
+                <button
+                  type="button"
+                  data-source="laptop"
+                  class="selected"
+                  aria-pressed="true"
+                >
+                  Server camera</button
+                ><button
+                  type="button"
+                  data-source="browser"
+                  aria-pressed="false"
+                >
+                  My camera</button
+                ><button type="button" data-source="phone" aria-pressed="false">
+                  Phone</button
+                ><button type="button" data-source="url" aria-pressed="false">
+                  Web stream
+                </button>
+              </div>
+              <label id="browserCameraField" hidden
+                >Camera on this device<select id="browserCamera">
+                  <option value="">Default camera</option>
+                </select></label
+              >
+              <div id="cameraFields" class="field-row">
+                <label
+                  >Camera index<input
+                    id="camera"
+                    type="number"
+                    min="0"
+                    max="20"
+                    value="0" /></label
+                ><label
+                  >Capture resolution<select id="captureSize">
+                    <option value="640,480">640 × 480</option>
+                    <option value="1280,720" selected>1280 × 720</option>
+                    <option value="1920,1080">1920 × 1080</option>
+                  </select></label
+                >
+              </div>
+              <label id="urlField" hidden
+                >Camera address<input
+                  id="url"
+                  type="text"
+                  placeholder="http://phone-ip:8080"
+                  autocomplete="off"
+                  spellcheck="false"
+              /></label>
+              <p id="sourceHint" class="hint">
+                Camera attached to the laptop running this server.
+              </p>
+              <label id="shareField" class="check-label" hidden
+                ><input id="shareOperator" type="checkbox" /> Allow the server
+                operator to view my camera</label
+              >
+              <p id="shareHint" class="hint" hidden>
+                Optional: your raw and annotated video will appear in the server
+                laptop’s local client monitor. Nothing is recorded.
+              </p>
+            </fieldset>
+            <fieldset>
+              <legend><span>02</span> Vision model</legend>
+              <div
+                class="feature-list"
+                role="group"
+                aria-label="Detection features"
+              >
+                <label
+                  ><input type="checkbox" id="featureDetect" checked /><span
+                    >Object detection<small
+                      >Bounding boxes and object labels.</small
+                    ></span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" id="featureSegment" checked /><span
+                    >Object segmentation<small
+                      >Colored masks outlining each object.</small
+                    ></span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" id="featurePose" checked /><span
+                    >Human pose<small
+                      >Body keypoints and skeleton lines.</small
+                    ></span
+                  ></label
+                >
+              </div>
+              <p class="hint">
+                Combine any features. Uncheck all for raw video. More features
+                can reduce FPS.
+              </p>
+              <label class="size-label">Model size <span>YOLO26</span></label>
+              <div class="sizes" role="group" aria-label="Model size">
+                <button
+                  type="button"
+                  data-size="n"
+                  class="selected"
+                  aria-pressed="true"
+                  title="Nano"
+                >
+                  N<small>Nano</small></button
+                ><button
+                  type="button"
+                  data-size="s"
+                  aria-pressed="false"
+                  title="Small"
+                >
+                  S<small>Small</small></button
+                ><button
+                  type="button"
+                  data-size="m"
+                  aria-pressed="false"
+                  title="Medium"
+                >
+                  M<small>Medium</small></button
+                ><button
+                  type="button"
+                  data-size="l"
+                  aria-pressed="false"
+                  title="Large"
+                >
+                  L<small>Large</small></button
+                ><button
+                  type="button"
+                  data-size="x"
+                  aria-pressed="false"
+                  title="Extra-large"
+                >
+                  X<small>XL</small>
+                </button>
+              </div>
+              <p class="hint">
+                Smaller is faster. New sizes download on first use.
+              </p>
+              <label
+                >Runtime<select id="device">
+                  <option value="auto">Auto · GPU when available</option>
+                  <option value="cpu">CPU</option>
+                </select></label
+              >
+              <p id="gpuHint" class="hint"></p>
+              <div class="field-row">
+                <label
+                  title="Resolution used inside the model. Larger inputs can reveal smaller objects but use more compute; this does not widen the camera view."
+                  >Inference size<select id="imgsz">
+                    <option value="320">320 px · fastest</option>
+                    <option value="480" selected>480 px · balanced</option>
+                    <option value="640">640 px</option>
+                    <option value="960">960 px</option>
+                    <option value="1280">1280 px · detailed</option>
+                  </select></label
+                ><label
+                  title="Minimum score for showing an object/person. Lower scores show more candidates and more false positives; higher scores hide uncertain results."
+                  >Confidence <output id="confidenceValue">35%</output
+                  ><input
+                    id="confidence"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="35"
+                /></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend><span>03</span> Preview performance</legend>
+              <div class="field-row">
+                <label
+                  title="Maximum width of the video sent through the browser connection. Smaller widths reduce upload/download bandwidth while preserving aspect ratio."
+                  >Preview width<select id="previewWidth">
+                    <option value="640">640 px</option>
+                    <option value="960" selected>960 px</option>
+                    <option value="1280">1280 px</option>
+                    <option value="1920">1920 px</option>
+                  </select></label
+                ><label
+                  title="Maximum frames per second to capture/send/process. It is a limit, not a promised rate; lowering it reduces bandwidth and work."
+                  >Output FPS cap<input
+                    id="maxFps"
+                    type="number"
+                    min="1"
+                    max="60"
+                    value="20"
+                /></label>
+              </div>
+              <label
+                title="Compression quality for browser upload and preview frames. Lower means smaller files and less detail; higher means sharper images and more bandwidth."
+                >JPEG quality <output id="qualityValue">75%</output
+                ><input id="quality" type="range" min="35" max="95" value="75"
+              /></label>
+              <details class="option-help">
+                <summary>What do these settings mean?</summary>
+                <dl>
+                  <dt>Inference size</dt>
+                  <dd>
+                    Pixels used by the model. Larger can detect finer details,
+                    but is slower.
+                  </dd>
+                  <dt>Confidence</dt>
+                  <dd>
+                    Minimum object/person score. Lower finds more candidates,
+                    including more false positives.
+                  </dd>
+                  <dt>Preview width</dt>
+                  <dd>
+                    Maximum transmitted video width. Smaller saves bandwidth;
+                    the camera’s viewing angle stays the same.
+                  </dd>
+                  <dt>Output FPS cap</dt>
+                  <dd>
+                    A maximum rate, not a guarantee. Lower caps reduce network
+                    and processing load.
+                  </dd>
+                  <dt>JPEG quality</dt>
+                  <dd>
+                    Higher gives sharper frames with larger files. Lower quality
+                    uses less bandwidth.
+                  </dd>
+                  <dt>Faster preview</dt>
+                  <dd>
+                    Sets nano, 320 inference pixels, 640 preview width, 60% JPEG
+                    quality and a 20 FPS cap. Your feature choices and runtime
+                    stay as selected. Apply changes to use it.
+                  </dd>
+                  <dt>Compare raw feed</dt>
+                  <dd>
+                    Unchecks all CV features. Apply changes to view the camera
+                    without inference and diagnose network versus processing
+                    delays.
+                  </dd>
+                </dl>
+              </details>
+              <div class="presets">
+                <button type="button" id="fastPreset">⚡ Faster preview</button
+                ><button type="button" id="rawPreset">Compare raw feed</button>
+              </div>
+            </fieldset>
+            <div class="actions">
+              <button id="apply" type="submit" class="primary">
+                ▶ Start preview</button
+              ><button id="stop" type="button" class="secondary" disabled>
+                Stop
+              </button>
+            </div>
+            <p class="privacy">Local inference. Nothing is recorded.</p>
+          </form>
+        </aside>
+      </div>
+      <footer>
+        YOLO26 · Object detection / Segmentation / Pose<span
+          >Aspect ratio preserved · F for fullscreen</span
+        >
+      </footer>
+    </main>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

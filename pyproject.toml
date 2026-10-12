@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yolo-studio"
+version = "0.1.0"
+description = "Local YOLO computer vision with browser and desktop interfaces"
+readme = "README.md"
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = ["playwright>=1.55,<2"]
+
+[project.scripts]
+yolo-studio = "yolo_studio.server:main"
+yolo-webcam = "yolo_studio.desktop:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}

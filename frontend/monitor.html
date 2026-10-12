@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>YOLO Studio · Client monitor</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+      .monitor-controls {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding: 20px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 20px;
+      }
+      .monitor-controls label {
+        flex: 1;
+        min-width: 180px;
+        margin: 0;
+      }
+      .monitor-view {
+        max-width: 1100px;
+        aspect-ratio: 16/9;
+      }
+      .monitor-note {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"><span class="brand-icon">Y</span>YOLO STUDIO</a
+      ><span class="badge">LOCAL OPERATOR</span>
+    </header>
+    <main>
+      <div class="heading">
+        <div>
+          <div class="eyebrow">SERVER LAPTOP ONLY</div>
+          <h1>Connected client cameras</h1>
+          <p>
+            View cameras whose owners have enabled sharing with the server
+            operator.
+          </p>
+        </div>
+      </div>
+      <div class="monitor-controls">
+        <label
+          >Client<select id="client">
+            <option value="">No sharing clients connected</option>
+          </select></label
+        ><label
+          >Video<select id="kind">
+            <option value="raw">Raw incoming camera</option>
+            <option value="processed">Processed / annotated preview</option>
+          </select></label
+        >
+      </div>
+      <div class="viewer monitor-view" id="viewer">
+        <img
+          id="feed"
+          alt="Shared client camera"
+          hidden
+          style="
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          "
+        />
+        <div class="empty" id="empty">
+          <h2>Waiting for a shared camera</h2>
+          <p>
+            Client chooses My camera, enables operator sharing, and presses
+            Start / apply.
+          </p>
+        </div>
+        <div class="viewer-footer">
+          <span id="status">No client selected</span
+          ><button id="fullscreen" class="icon-button">⛶ Fullscreen</button>
+        </div>
+      </div>
+      <p class="monitor-note">
+        Raw video is the received browser feed, before CV. Processed video
+        includes the selected features. Sharing ends when the client stops or
+        disables it. Nothing is recorded. Camera/settings/frame buffers are
+        isolated per browser profile; CPU, GPU memory and bandwidth are shared.
+        Multiple active sessions can reduce FPS. The same physical server webcam
+        may not allow concurrent captures.
+      </p>
+      <div class="error" id="error" hidden role="alert"></div>
+    </main>
+    <script src="/static/monitor.js"></script>
+  </body>
+</html>
