@@ -6,7 +6,7 @@ forwards a public HTTPS hostname to loopback. Model execution stays on the host.
 
 ```mermaid
 flowchart LR
-    Browser[Viewer browser] <-->|HTTP controls + WebSocket JPEGs| API[app.py]
+    Browser[Viewer browser] <-->|HTTP controls + WebSocket JPEGs| API[web/routes]
     API --> Sessions[engine.py: Sessions]
     Sessions --> Worker[Per-session Engine]
     Worker --> Capture[capture.py: latest frame]
@@ -27,11 +27,18 @@ flowchart LR
   overlays. Segmentation can supply object boxes without an extra detector.
 - `engine.py` owns model/capture lifecycle, output buffers, and session cleanup.
   Its worker threads run independently but share the host's compute resources.
-- `app.py` handles HTTP/WebSocket transport, cookies, origin checks, and local
-  operator restrictions. It delegates processing to session engines.
-- `server.py` and `desktop.py` provide separate web and OpenCV entry points.
-- `paths.py` centralizes repository paths so cached weights and static assets
-  do not depend on the shell's working directory.
+- `web/app.py` assembles the application. `web/routes/controls.py` owns settings
+  and status, `streaming.py` owns HTTP/WebSocket video transport, `operator.py`
+  owns local-only viewing, and `pages.py` serves the dashboard.
+- `web/middleware.py` owns cookies and same-origin controls; `web/lifecycle.py`
+  creates and cleans up the session registry.
+- `web/templates/` and `web/static/` contain packaged HTML, JavaScript, and CSS.
+  Public URLs such as `/static/app.js` remain stable.
+- `cli/server.py` and `cli/desktop.py` implement the two command-line interfaces.
+  Root package `app.py`, `server.py`, and `desktop.py` remain compatibility entry
+  points for existing commands and integrations.
+- `paths.py` locates packaged assets and writable runtime directories independently
+  of the shell's working directory.
 
 ## Sessions and data lifecycle
 
@@ -57,8 +64,15 @@ are held in memory and are not recorded.
 
 Install editable with `uv pip install --python .venv-system/Scripts/python.exe -e .`.
 The `src` layout prevents loose root files from accidentally shadowing imports.
-This application is run from its checkout: the frontend is a sibling directory,
-not a separately hosted asset bundle or standalone wheel resource.
+The frontend is shipped as package data in both editable installs and wheels;
+there is no separate frontend deployment or build step. Wheel installations
+store generated files under `~/.yolo-studio/runtime/`, while editable checkout
+runs use the repository's `runtime/`. `YOLO_STUDIO_RUNTIME_DIR` overrides either
+location. Keep this writable directory outside the installed package.
+
+When adding endpoints, choose the appropriate router; application assembly should
+only register middleware, assets, and routers. Capture and model processing belong
+in the shared modules so both web and desktop interfaces can reuse them.
 
 Root CMD launchers are compatibility wrappers; their implementations and setup
 logic live under `scripts/`. The PyTorch installer selects official CPU/CUDA

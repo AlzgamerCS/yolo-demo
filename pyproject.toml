@@ -14,11 +14,14 @@ dynamic = ["dependencies"]
 dev = ["playwright>=1.55,<2"]
 
 [project.scripts]
-yolo-studio = "yolo_studio.server:main"
-yolo-webcam = "yolo_studio.desktop:run"
+yolo-studio = "yolo_studio.cli.server:main"
+yolo-webcam = "yolo_studio.cli.desktop:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.package-data]
+"yolo_studio.web" = ["templates/*.html", "static/*.js", "static/*.css"]

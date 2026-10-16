@@ -34,23 +34,30 @@ its installed PyTorch CPU/GPU build:
 uv pip install --python .venv-system\Scripts\python.exe -e .
 ```
 
-Existing root commands remain available as small wrappers around `scripts/`.
+Root commands are stable entry points; their implementations live in `scripts/`.
 Use Ctrl+C for services started in a terminal. `stop-web.cmd` and
 `stop-tunnel.cmd` stop their recorded background instances.
 
 ## Project layout
 
 ```text
-src/yolo_studio/       Python application package
-  app.py              FastAPI endpoints, WebSocket transport, operator access
-  config.py           Validated per-session settings and feature combinations
-  capture.py          Webcam/network capture and latest browser frames
-  vision.py           Model loading, inference, annotation, image fitting
-  engine.py           Inference workers and isolated browser sessions
-  server.py           Web-server command-line entry point
-  desktop.py          Desktop OpenCV preview command-line entry point
-  paths.py            Checkout-relative frontend and runtime paths
-frontend/             HTML, CSS, and JavaScript for both browser interfaces
+src/yolo_studio/       Installable Python application
+  web/                HTTP interface and bundled browser assets
+    app.py            Application assembly and router registration
+    lifecycle.py      Session startup and shutdown
+    middleware.py     Session cookies and same-origin controls
+    routes/           Pages, controls, streaming, local operator access
+    templates/        Dashboard and monitor HTML
+    static/           Browser JavaScript and CSS
+  cli/                Web-server and desktop command implementations
+  config.py           Validated per-session settings
+  capture.py          Camera/network readers and browser frames
+  vision.py           Model loading, inference, and annotation
+  engine.py           Inference workers and browser sessions
+  paths.py            Packaged assets and writable runtime locations
+  app.py              Compatibility ASGI import
+  server.py           Compatibility web command
+  desktop.py          Compatibility desktop command
 scripts/              Windows launch/setup/tunnel scripts
 scripts/python/       PyTorch installer and performance benchmark
 tests/                Smoke and integration checks
@@ -89,6 +96,10 @@ Checks use synthetic/bundled sample images and isolated sessions. Browser QA
 screenshots are written to `runtime/artifacts/`. The desktop entry point is
 `python -m yolo_studio.desktop`; `start.cmd` and `start-phone.cmd` invoke it.
 The installed console commands are `yolo-studio` and `yolo-webcam`.
+Browser assets are included in built wheels, so installed distributions do not
+need a separate frontend checkout. Checkout runs store generated files in
+`runtime/`; wheel installations default to `~/.yolo-studio/runtime/`. Set
+`YOLO_STUDIO_RUNTIME_DIR` to an absolute directory to override this location.
 
 ## Documentation
 
