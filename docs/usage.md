@@ -554,9 +554,14 @@ tap resumes it. The server microphone may be separate from the selected webcam;
 select the correct Windows input device. Microphone access for desktop apps must
 be allowed in Windows Privacy & security > Microphone settings.
 
-Audio travels as mono PCM16 over a separate same-origin WebSocket, using 16 kHz
-when the hardware supports it and the input's native rate otherwise (about
-32 KB/s at 16 kHz, plus transport overhead). It bypasses inference, uses bounded
+On Windows, the selector shows active WASAPI input endpoints, removing duplicate
+legacy driver and sound-mapper entries. Automatic chooses the default microphone
+from that list. Capture uses the microphone's native sample rate and up to two
+input channels, with supported-format fallbacks. The strongest channel supplies
+the mono stream so an inactive channel or phase cancellation cannot mute it.
+
+Audio travels as mono PCM16 over a separate same-origin WebSocket (about 96 KB/s
+at 48 kHz or 32 KB/s at 16 kHz, plus transport overhead). It bypasses inference, uses bounded
 buffers, and discards stale audio rather than growing a backlog. This is listening
 only: browser microphone upload, phone/RTSP audio extraction, recording, and exact
 audio/video synchronization are not provided. Processed video can lag behind audio.
@@ -567,6 +572,15 @@ an explanatory error. The last listener leaving releases the input. Anyone using
 the public link can select the server camera and listen, as with the existing
 link-accessible camera controls. Use the optional tunnel email restriction if you
 want to restrict access.
+
+If listening is silent, check **Input level** while speaking. A flat meter and a
+silent-input warning mean the server is receiving little or no microphone signal;
+check the laptop's microphone-mute key, Windows Sound > Input mute/volume, and
+microphone permissions. **Test speaker** plays a short tone locally in the
+viewer browser without opening a server microphone. If that tone is inaudible,
+check the browser tab's mute setting, system volume, and selected output device.
+The app distinguishes a connected microphone from received input signal and
+browser playback state; connection alone does not establish audible sound.
 
 ## PowerShell command reference
 

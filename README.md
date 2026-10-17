@@ -52,6 +52,10 @@ For **Server camera**, start the preview, choose a **Server microphone**, and ta
 stop listening. The microphone is captured on the backend laptop; browser/phone
 sources remain video-only. Audio and CV video are independent, so they may have
 different delays. Nothing is recorded.
+Windows input choices omit duplicate legacy drivers. **Input level** shows the
+received microphone signal; **Test speaker** checks sound output in your browser.
+If the input meter stays flat while speaking, check the laptop's mic-mute key
+and Windows Sound input settings.
 
 All Windows commands are PowerShell scripts. If Windows blocks script execution,
 run the same command with a per-process bypass, for example:

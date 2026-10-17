@@ -1,5 +1,6 @@
 """Audio lifecycle and WebSocket access checks without recording real inputs."""
 import threading
+import struct
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -7,7 +8,7 @@ from unittest.mock import patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
-from yolo_studio.audio import AudioHub
+from yolo_studio.audio import AudioHub, input_devices
 from yolo_studio.web.routes.audio import router
 
 
@@ -22,6 +23,9 @@ class FakeStream:
 
 
 class SyntheticHub(AudioHub):
+    def resolve_device(self, device):
+        return 1 if device is None else device
+
     def open(self, device):
         self.stream, self.device = FakeStream(), device
 
@@ -32,6 +36,17 @@ class SyntheticHub(AudioHub):
 
 
 class CaptureTests(unittest.IsolatedAsyncioTestCase):
+    async def test_stereo_microphone_uses_active_channel_without_cancellation(self):
+        hub = SyntheticHub()
+        subscriber, _ = await hub.subscribe()
+        subscriber.get_nowait()
+        hub.channels = 2
+        hub.publish(struct.pack('<4h', 0, 1000, 0, -1000), 2, None, None)
+        self.assertEqual(struct.unpack('<2h', subscriber.get_nowait()), (1000, -1000))
+        hub.publish(struct.pack('<4h', 1000, -1000, 2000, -2000), 2, None, None)
+        self.assertEqual(struct.unpack('<2h', subscriber.get_nowait()), (1000, 2000))
+        await hub.unsubscribe(subscriber)
+
     async def test_shared_capture_and_bounded_slow_listener(self):
         hub = SyntheticHub()
         first, rate = await hub.subscribe()
@@ -53,10 +68,40 @@ class CaptureTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_open_failure_does_not_add_listener(self):
         hub = AudioHub()
-        with patch.object(hub, 'open', side_effect=RuntimeError('No input')):
+        with patch.object(hub, 'resolve_device', return_value=1), patch.object(hub, 'open', side_effect=RuntimeError('No input')):
             with self.assertRaisesRegex(RuntimeError, 'No input'):
                 await hub.subscribe()
         self.assertEqual(hub.subscribers, ())
+
+
+class DeviceTests(unittest.TestCase):
+    def test_windows_shows_active_endpoints_without_legacy_duplicates(self):
+        devices = [{'name': 'Input mapper', 'hostapi': 0, 'max_input_channels': 2},
+                   {'name': 'Realtek', 'hostapi': 0, 'max_input_channels': 2},
+                   {'name': 'Realtek', 'hostapi': 1, 'max_input_channels': 2},
+                   {'name': 'Speakers', 'hostapi': 1, 'max_input_channels': 0}]
+        apis = [{'name': 'MME', 'default_input_device': 1},
+                {'name': 'Windows WASAPI', 'default_input_device': 2}]
+        with patch('sounddevice.query_devices', return_value=devices), \
+             patch('sounddevice.query_hostapis', return_value=apis), \
+             patch('sounddevice.default.device', [1, 3]), \
+             patch('yolo_studio.audio.sys.platform', 'win32'):
+            result = input_devices()
+        self.assertEqual([device['value'] for device in result['devices']], ['2'])
+        self.assertEqual(result['default_device'], 2)
+        self.assertEqual(result['default_label'], 'Realtek')
+
+    def test_capture_uses_native_rate_and_microphone_channels(self):
+        hub = AudioHub()
+        info = {'name': 'Realtek', 'default_samplerate': 48000, 'max_input_channels': 2}
+        with patch('sounddevice.query_devices', return_value=info), \
+             patch('sounddevice.check_input_settings'), \
+             patch('sounddevice.RawInputStream') as stream:
+            hub.open(2)
+        self.assertEqual(stream.call_args.kwargs['channels'], 2)
+        self.assertEqual(stream.call_args.kwargs['samplerate'], 48000)
+        self.assertEqual(hub.sample_rate, 48000)
+        self.assertEqual(hub.device_name, 'Realtek')
 
 
 class SocketTests(unittest.TestCase):

@@ -2,6 +2,7 @@
 import argparse
 import json
 import struct
+import time
 from playwright.sync_api import sync_playwright
 
 
@@ -29,8 +30,10 @@ def main():
             return node;
           };''')
         closed = []
+        connections = []
 
         def audio(socket):
+            connections.append(socket)
             socket.on_close(lambda *args: closed.append(True))
             socket.send(json.dumps({'sample_rate': 16000, 'channels': 1, 'format': 's16le'}))
             socket.send(struct.pack('<320h', *([1000, -1000] * 160)))
@@ -41,9 +44,19 @@ def main():
         try:
             page.goto(base)
             page.wait_for_function("!document.getElementById('listenAudio').disabled")
+            assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
             page.locator('#listenAudio').tap()
             page.wait_for_function('window.scheduledAudio > 0')
+            assert page.locator('#audioLevel').evaluate('element => element.value') > 0
+            assert 'Input signal received' in page.locator('#audioStatus').inner_text()
             assert page.locator('#listenAudio').get_attribute('aria-pressed') == 'true'
+            # Connected silence must be reported as silence, not successful listening.
+            until = time.monotonic() + 2.3
+            while time.monotonic() < until:
+                connections[-1].send(bytes(640))
+                page.wait_for_timeout(50)
+            assert 'Microphone is silent' in page.locator('#audioStatus').inner_text()
+            assert page.locator('#audioLevel').evaluate('element => element.value') == 0
             page.locator('#listenAudio').tap()
             assert page.locator('#listenAudio').get_attribute('aria-pressed') == 'false'
             page.locator('#listenAudio').tap()
@@ -53,8 +66,11 @@ def main():
             assert page.locator('#listenAudio').get_attribute('aria-pressed') == 'false'
             page.wait_for_timeout(100)
             assert len(closed) >= 2, 'Mute/source change did not close the audio socket'
+            page.locator('[data-source="laptop"]').tap()
+            page.locator('#testSpeaker').tap()
+            assert 'test tone' in page.locator('#audioStatus').inner_text()
             assert not errors, errors
-            print('PASS: mobile user-gesture PCM playback, microphone selector, Mute, source-change cleanup; no real audio captured.')
+            print('PASS: PCM playback, signal meter, silent-input warning, speaker test, Mute, source-change cleanup; synthetic audio only.')
         finally:
             context.close()
             browser.close()

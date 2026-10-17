@@ -61,7 +61,8 @@ async def listen(socket: WebSocket, device: int | None = None):
     tasks = []
     try:
         subscriber, rate = await hub.subscribe(device)
-        await socket.send_json({'sample_rate': rate, 'channels': 1, 'format': 's16le'})
+        await socket.send_json({'sample_rate': rate, 'channels': 1, 'format': 's16le',
+                                'device_name': hub.device_name})
         tasks = [asyncio.create_task(send()), asyncio.create_task(receive())]
         done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:

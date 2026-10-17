@@ -716,6 +716,9 @@ footer {
 .audio-panel label { margin: 0; min-width: 0; }
 .audio-panel button { min-height: 44px; }
 .audio-panel p { grid-column: 1 / -1; margin: 0; }
+.audio-actions { display: flex; gap: 8px; }
+.audio-level { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.audio-level meter { flex: 1; width: 100%; height: 14px; }
 .viewer.expanded {
   position: fixed;
   inset: 0;
@@ -739,6 +742,8 @@ body.viewer-expanded { overflow: hidden; }
   .feature-list input { flex-shrink: 0; }
 }
 @media (max-width: 600px) {
+  .audio-panel { grid-template-columns: minmax(0, 1fr); }
+  .audio-actions button { flex: 1; }
   .topbar { padding: 0 max(12px, env(safe-area-inset-left)); gap: 8px; }
   .brand { gap: 7px; font-size: 17px; }
   .brand b { display: none; }

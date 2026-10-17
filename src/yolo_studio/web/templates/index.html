@@ -85,7 +85,11 @@
           </div>
           <div id="audioPanel" class="audio-panel" hidden>
             <label>Server microphone<select id="audioDevice"><option value="">System default input</option></select></label>
-            <button id="listenAudio" type="button" class="secondary" aria-pressed="false" disabled>Listen</button>
+            <div class="audio-actions">
+              <button id="listenAudio" type="button" class="secondary" aria-pressed="false" disabled>Listen</button>
+              <button id="testSpeaker" type="button" class="secondary">Test speaker</button>
+            </div>
+            <label class="audio-level">Input level <meter id="audioLevel" min="0" max="100" value="0" aria-label="Server microphone input level"></meter></label>
             <p id="audioStatus" class="hint" role="status">Start the server camera to listen. Audio is off by default.</p>
           </div>
           <div class="metrics">
