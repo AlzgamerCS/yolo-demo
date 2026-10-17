@@ -1,0 +1,35 @@
+# Commands share the same tools/configuration as lint.ps1.
+repos:
+  - repo: local
+    hooks:
+      - id: python-lint
+        name: Python lint (Ruff)
+        language: system
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File lint.ps1 -Tool Python
+        types: [python]
+      - id: python-format
+        name: Python format (Ruff)
+        language: system
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File lint.ps1 -Tool PythonFormat
+        types: [python]
+      - id: javascript-lint
+        name: JavaScript lint (ESLint)
+        language: system
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File lint.ps1 -Tool JavaScript
+        files: ^src/yolo_studio/web/static/.*\.js$
+      - id: css-lint
+        name: CSS lint (Stylelint)
+        language: system
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File lint.ps1 -Tool CSS
+        types: [css]
+      - id: html-lint
+        name: HTML lint (HTML-Validate)
+        language: system
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File lint.ps1 -Tool HTML
+        types: [html]
+      - id: frontend-format
+        name: Frontend format (Prettier)
+        language: system
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File lint.ps1 -Tool FrontendFormat
+        files: ^(src/yolo_studio/web/.*\.(html|css|js)|[^/]+\.(mjs|json)|\.pre-commit-config\.yaml)$
+        exclude: ^package-lock\.json$

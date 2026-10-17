@@ -13,7 +13,9 @@ async function toggleViewerFullscreen(viewer) {
     try {
       await viewer.requestFullscreen();
       return;
-    } catch (_) { /* Fall back when the browser refuses native fullscreen. */ }
+    } catch {
+      /* Fall back when the browser refuses native fullscreen. */
+    }
   }
   viewer.classList.add("expanded");
   document.body.classList.add("viewer-expanded");

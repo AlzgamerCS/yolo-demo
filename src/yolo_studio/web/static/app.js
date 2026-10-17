@@ -2,13 +2,11 @@ const $ = (id) => document.getElementById(id);
 let source = "laptop",
   size = "n",
   frameId = -1,
-  dirty = false,
   phase = "idle";
 let blobUrl = null,
   polling = true;
 let browserStream = null,
-  uploadToken = 0,
-  uploadGeneration = 0;
+  uploadToken = 0;
 let liveSocket = null,
   activeGeneration = 0,
   renderBusy = false,
@@ -77,9 +75,7 @@ const featureIds = {
   pose: "featurePose",
 };
 function selectedFeatures() {
-  return Object.keys(featureIds).filter(
-    (feature) => $(featureIds[feature]).checked,
-  );
+  return Object.keys(featureIds).filter((feature) => $(featureIds[feature]).checked);
 }
 function selectFeatures(features) {
   Object.entries(featureIds).forEach(
@@ -94,15 +90,11 @@ function featureTitle(features) {
       : features.length === 1
         ? modeNames[features[0]]
         : features
-            .map(
-              (feature) =>
-                ({ detect: "BOXES", segment: "MASKS", pose: "POSE" })[feature],
-            )
+            .map((feature) => ({ detect: "BOXES", segment: "MASKS", pose: "POSE" })[feature])
             .join(" + ");
 }
 
 function markDirty() {
-  dirty = true;
   $("dirtyLabel").textContent = "Changes ready to apply";
   $("dirtyLabel").classList.add("dirty");
 }
@@ -229,11 +221,7 @@ function renderStatus(s) {
   badge.textContent = `● ${running ? "Live" : phase === "error" ? "Source error" : busy ? "Connecting" : "Idle"}`;
   badge.classList.toggle("live", running);
   badge.classList.toggle("failed", phase === "error");
-  $("apply").textContent = running
-    ? "Apply changes"
-    : busy
-      ? "Apply / restart"
-      : "▶ Start preview";
+  $("apply").textContent = running ? "Apply changes" : busy ? "Apply / restart" : "▶ Start preview";
   $("stop").disabled = ["idle", "stopping"].includes(phase);
   if (phase !== "running") {
     $("video").hidden = true;
@@ -274,12 +262,10 @@ function renderStatus(s) {
       : m.device === "cpu"
         ? "CPU inference"
         : `GPU ${m.device}`;
-  let hint =
-    "Try Raw preview to check the camera connection before adding inference.";
+  let hint = "Try Raw preview to check the camera connection before adding inference.";
   if (running) {
     if ((m.preview_age_ms || 0) > 3000)
-      hint =
-        "Waiting for a fresh processed frame. Try a smaller model or Raw preview.";
+      hint = "Waiting for a fresh processed frame. Try a smaller model or Raw preview.";
     else if (s.config.mode === "raw")
       hint =
         "Inference is off. If this feed is slow, check the connection and phone capture settings.";
@@ -309,7 +295,7 @@ async function statuses() {
     await new Promise((resolve) => setTimeout(resolve, 800));
   }
 }
-async function frames() {
+async function pollFrames() {
   while (polling) {
     if (liveSocket?.readyState === WebSocket.OPEN) {
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -317,20 +303,15 @@ async function frames() {
     }
     try {
       const response = await fetch(`/api/frame?after=${frameId}`);
-      if (
-        response.status === 200 &&
-        liveSocket?.readyState !== WebSocket.OPEN
-      ) {
+      if (response.status === 200 && liveSocket?.readyState !== WebSocket.OPEN) {
         const nextId = Number(response.headers.get("X-Frame-Id"));
         pendingFrame = { blob: await response.blob(), id: nextId };
         drawLatest();
       }
-    } catch (error) {
+    } catch {
       /* Status polling handles connection errors. */
     }
-    await new Promise((resolve) =>
-      setTimeout(resolve, phase === "running" ? 16 : 200),
-    );
+    await new Promise((resolve) => setTimeout(resolve, phase === "running" ? 16 : 200));
   }
 }
 async function fullscreen() {
@@ -348,9 +329,7 @@ function stopBrowserCamera() {
 }
 async function startBrowserCamera() {
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia)
-    throw new Error(
-      "Browser camera requires HTTPS or localhost. Open the HTTPS tunnel link.",
-    );
+    throw new Error("Browser camera requires HTTPS or localhost. Open the HTTPS tunnel link.");
   stopBrowserCamera();
   const id = $("browserCamera").value;
   browserStream = await navigator.mediaDevices.getUserMedia({
@@ -360,7 +339,11 @@ async function startBrowserCamera() {
           width: { ideal: 1280 },
           height: { ideal: 720 },
         }
-      : { facingMode: { ideal: $("facingMode").value }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      : {
+          facingMode: { ideal: $("facingMode").value },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
     audio: false,
   });
   captureVideo.srcObject = browserStream;
@@ -381,7 +364,6 @@ async function startBrowserCamera() {
 }
 async function uploadFrames(generation, settings) {
   const token = ++uploadToken;
-  uploadGeneration = generation;
   const context = captureCanvas.getContext("2d");
   while (polling && browserStream && token === uploadToken) {
     const started = performance.now();
@@ -395,13 +377,7 @@ async function uploadFrames(generation, settings) {
       const scale = Math.min(1, settings.preview_width / width);
       captureCanvas.width = Math.max(1, Math.round(width * scale));
       captureCanvas.height = Math.max(1, Math.round(height * scale));
-      context.drawImage(
-        captureVideo,
-        0,
-        0,
-        captureCanvas.width,
-        captureCanvas.height,
-      );
+      context.drawImage(captureVideo, 0, 0, captureCanvas.width, captureCanvas.height);
       const blob = await new Promise((resolve) =>
         captureCanvas.toBlob(resolve, "image/jpeg", settings.quality / 100),
       );
@@ -413,14 +389,11 @@ async function uploadFrames(generation, settings) {
           liveSocket.send(new Blob([header, blob]));
         }
       } else {
-        const response = await fetch(
-          `/api/browser-frame?generation=${generation}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "image/jpeg" },
-            body: blob,
-          },
-        );
+        const response = await fetch(`/api/browser-frame?generation=${generation}`, {
+          method: "POST",
+          headers: { "Content-Type": "image/jpeg" },
+          body: blob,
+        });
         if (![204, 409].includes(response.status))
           throw new Error(`Camera upload failed (${response.status}).`);
       }
@@ -431,23 +404,16 @@ async function uploadFrames(generation, settings) {
     }
     // Pace uploads; WebSocket buffering is bounded and HTTP fallback is serial.
     await new Promise((resolve) =>
-      setTimeout(
-        resolve,
-        Math.max(20, 1000 / settings.max_fps - (performance.now() - started)),
-      ),
+      setTimeout(resolve, Math.max(20, 1000 / settings.max_fps - (performance.now() - started))),
     );
   }
 }
 document
   .querySelectorAll("[data-source]")
-  .forEach((button) =>
-    button.addEventListener("click", () => pickSource(button.dataset.source)),
-  );
+  .forEach((button) => button.addEventListener("click", () => pickSource(button.dataset.source)));
 document
   .querySelectorAll("[data-size]")
-  .forEach((button) =>
-    button.addEventListener("click", () => pickSize(button.dataset.size)),
-  );
+  .forEach((button) => button.addEventListener("click", () => pickSize(button.dataset.size)));
 $("configForm").addEventListener("input", () => {
   ranges();
   markDirty();
@@ -468,7 +434,6 @@ $("configForm").addEventListener("submit", async (event) => {
     else stopBrowserCamera();
     const state = await api("/api/config", settings);
     if (settings.source === "browser") uploadFrames(state.generation, settings);
-    dirty = false;
     $("dirtyLabel").textContent = "Settings applied";
     $("dirtyLabel").classList.remove("dirty");
     renderStatus(state);
@@ -491,7 +456,10 @@ $("stop").addEventListener("click", async () => {
 });
 $("fullscreen").addEventListener("click", fullscreen);
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && (document.fullscreenElement || $("viewer").classList.contains("expanded"))) {
+  if (
+    event.key === "Escape" &&
+    (document.fullscreenElement || $("viewer").classList.contains("expanded"))
+  ) {
     event.preventDefault();
     fullscreen();
   } else if (
@@ -520,10 +488,7 @@ window.addEventListener("pagehide", () => {
   liveSocket?.close();
   serverAudio.stop();
   stopBrowserCamera();
-  navigator.sendBeacon(
-    "/api/stop",
-    new Blob(["{}"], { type: "application/json" }),
-  );
+  navigator.sendBeacon("/api/stop", new Blob(["{}"], { type: "application/json" }));
   if (blobUrl) URL.revokeObjectURL(blobUrl);
 });
 window.addEventListener("pageshow", (event) => {
@@ -549,12 +514,10 @@ async function init() {
     hydrate(state.config);
     renderStatus(state);
     statuses();
-    frames();
+    pollFrames();
   } catch (error) {
     showError(error.message);
   }
 }
-$("operatorLink").hidden = !["localhost", "127.0.0.1", "::1"].includes(
-  location.hostname,
-);
+$("operatorLink").hidden = !["localhost", "127.0.0.1", "::1"].includes(location.hostname);
 init().then(connectLive);

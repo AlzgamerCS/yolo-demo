@@ -1,0 +1,25 @@
+{
+  "name": "yolo-studio-dev",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development-only frontend checks; no frontend build step",
+  "engines": {
+    "node": ">=24.8.0"
+  },
+  "scripts": {
+    "lint:js": "eslint src/yolo_studio/web/static --max-warnings 0",
+    "lint:css": "stylelint \"src/yolo_studio/web/static/**/*.css\" --max-warnings 0",
+    "lint:html": "html-validate \"src/yolo_studio/web/templates/**/*.html\"",
+    "format:check": "prettier --check \"src/yolo_studio/web/**/*.{html,css,js}\"",
+    "format": "prettier --write \"src/yolo_studio/web/**/*.{html,css,js}\""
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "eslint": "10.13.0",
+    "@eslint/js": "10.0.1",
+    "globals": "17.13.0",
+    "stylelint": "17.16.0",
+    "stylelint-config-standard": "40.0.0",
+    "html-validate": "11.16.3"
+  }
+}

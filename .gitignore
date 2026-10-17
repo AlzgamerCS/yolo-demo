@@ -24,3 +24,4 @@ runs/
 .web.pid
 .tunnel.pid
 artifacts/
+node_modules/

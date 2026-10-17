@@ -44,9 +44,7 @@ async function clients() {
           : [new Option("No sharing clients connected", "")]),
       );
       $("client").value = currentClient;
-      const client = data.sessions.find(
-        (client) => client.id === currentClient,
-      );
+      const client = data.sessions.find((client) => client.id === currentClient);
       $("status").textContent = client
         ? `${client.label} · ${client.metrics.resolution || "waiting for video"}`
         : "No client selected";
@@ -57,7 +55,7 @@ async function clients() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
-async function frames() {
+async function pollFrames() {
   while (alive) {
     if (currentClient) {
       const token = requestGeneration;
@@ -84,13 +82,11 @@ async function frames() {
         } else if (response.status === 403 || response.status === 404) {
           reset();
         }
-      } catch (error) {
+      } catch {
         reset();
       }
     }
-    await new Promise((resolve) =>
-      setTimeout(resolve, currentClient ? 30 : 300),
-    );
+    await new Promise((resolve) => setTimeout(resolve, currentClient ? 30 : 300));
   }
 }
 window.onpagehide = () => {
@@ -98,4 +94,4 @@ window.onpagehide = () => {
   if (lastUrl) URL.revokeObjectURL(lastUrl);
 };
 clients();
-frames();
+pollFrames();

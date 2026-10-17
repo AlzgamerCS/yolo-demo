@@ -1,5 +1,6 @@
 """Compatibility entry point; implementation is in cli.desktop."""
-from .cli.desktop import build_parser, main, run
+
+from .cli.desktop import run
 
 if __name__ == "__main__":
     run()

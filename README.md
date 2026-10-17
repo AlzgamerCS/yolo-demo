@@ -122,6 +122,29 @@ not a substitute for choosing the correct CPU/CUDA installation.
 
 ## Development
 
+Install the development tools and Git pre-commit hook once:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-dev.ps1
+```
+
+This installs pinned Python lint tools and the frontend tools from `package-lock.json`.
+If Node.js is missing, it downloads a checksum-verified local Node runtime under
+ignored `runtime/tools/node/`; no global Node installation is required. Node is used
+only for development checks, not to start the app.
+
+```powershell
+.\lint.ps1            # Check Python, JavaScript, CSS, HTML, and formatting
+.\lint.ps1 -Fix       # Apply safe lint fixes and format files
+.\.venv-system\Scripts\python.exe -m pre_commit run --all-files
+```
+
+Commits check staged files with Ruff, ESLint, Stylelint, HTML-Validate, and Prettier.
+Checks fail on errors or formatting differences. Run `lint.ps1 -Fix`, resolve any
+remaining errors, and stage the updated files before retrying. `-Tool Python`,
+`JavaScript`, `CSS`, or `HTML` runs an individual linter. See
+[development checks](docs/development.md) for configuration and dependency updates.
+
 The package uses a `src` layout. Install it editable once; edits then take effect
 when the server restarts. No Node.js or frontend build step is needed.
 
