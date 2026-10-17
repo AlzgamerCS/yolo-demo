@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent $PSScriptRoot
+$projectRoot = $PSScriptRoot
 $pidFile = Join-Path $projectRoot 'runtime\pids\.tunnel.pid'
 if (-not (Test-Path -LiteralPath $pidFile)) {
     Write-Host 'No background tunnel PID found. Use Ctrl+C in its terminal.'

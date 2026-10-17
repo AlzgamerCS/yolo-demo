@@ -107,6 +107,7 @@ function markDirty() {
   $("dirtyLabel").classList.add("dirty");
 }
 function pickSource(value, changed = true) {
+  if (changed) serverAudio.stop();
   source = value;
   document.querySelectorAll("[data-source]").forEach((button) => {
     const selected = button.dataset.source === value;
@@ -117,6 +118,8 @@ function pickSource(value, changed = true) {
   $("urlField").hidden = value === "laptop";
   $("urlField").hidden = !["phone", "url"].includes(value);
   $("browserCameraField").hidden = value !== "browser";
+  $("facingField").hidden = value !== "browser";
+  $("audioPanel").hidden = value !== "laptop";
   $("shareField").hidden = value !== "browser";
   $("shareHint").hidden = value !== "browser";
   $("sourceHint").textContent =
@@ -213,6 +216,7 @@ function showError(message) {
   $("error").hidden = !message;
 }
 function renderStatus(s) {
+  serverAudio.update(s, source);
   activeGeneration = s.generation;
   if (s.frame_id < frameId) {
     frameId = -1;
@@ -331,8 +335,7 @@ async function frames() {
 }
 async function fullscreen() {
   try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await $("viewer").requestFullscreen();
+    await toggleViewerFullscreen($("viewer"));
   } catch (error) {
     showError(`Fullscreen unavailable: ${error.message}`);
   }
@@ -357,7 +360,7 @@ async function startBrowserCamera() {
           width: { ideal: 1280 },
           height: { ideal: 720 },
         }
-      : { width: { ideal: 1280 }, height: { ideal: 720 } },
+      : { facingMode: { ideal: $("facingMode").value }, width: { ideal: 1280 }, height: { ideal: 720 } },
     audio: false,
   });
   captureVideo.srcObject = browserStream;
@@ -450,8 +453,13 @@ $("configForm").addEventListener("input", () => {
   markDirty();
 });
 $("configForm").addEventListener("change", markDirty);
+$("facingMode").addEventListener("change", () => {
+  // A specific deviceId overrides facingMode; clear it when choosing front/rear.
+  $("browserCamera").value = "";
+});
 $("configForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  serverAudio.stop();
   $("apply").disabled = true;
   showError("");
   try {
@@ -472,6 +480,7 @@ $("configForm").addEventListener("submit", async (event) => {
   }
 });
 $("stop").addEventListener("click", async () => {
+  serverAudio.stop();
   stopBrowserCamera();
   try {
     await api("/api/stop", {});
@@ -482,7 +491,7 @@ $("stop").addEventListener("click", async () => {
 });
 $("fullscreen").addEventListener("click", fullscreen);
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && document.fullscreenElement) {
+  if (event.key === "Escape" && (document.fullscreenElement || $("viewer").classList.contains("expanded"))) {
     event.preventDefault();
     fullscreen();
   } else if (
@@ -509,12 +518,16 @@ $("rawPreset").addEventListener("click", () => {
 window.addEventListener("pagehide", () => {
   polling = false;
   liveSocket?.close();
+  serverAudio.stop();
   stopBrowserCamera();
   navigator.sendBeacon(
     "/api/stop",
     new Blob(["{}"], { type: "application/json" }),
   );
   if (blobUrl) URL.revokeObjectURL(blobUrl);
+});
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) location.reload();
 });
 async function init() {
   try {
@@ -531,6 +544,7 @@ async function init() {
     $("gpuHint").textContent = options.gpu_available
       ? "GPU available. Auto selects GPU 0."
       : "GPU unavailable in the installed PyTorch build. CPU is available.";
+    serverAudio.loadDevices();
     const state = await api("/api/status");
     hydrate(state.config);
     renderStatus(state);

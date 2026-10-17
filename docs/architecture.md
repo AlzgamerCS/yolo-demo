@@ -74,8 +74,10 @@ When adding endpoints, choose the appropriate router; application assembly shoul
 only register middleware, assets, and routers. Capture and model processing belong
 in the shared modules so both web and desktop interfaces can reuse them.
 
-Root CMD launchers are compatibility wrappers; their implementations and setup
-logic live under `scripts/`. The PyTorch installer selects official CPU/CUDA
+Root PowerShell scripts are the single implementations for setup, launch, and
+stop commands. `scripts/lib/python.ps1` shares Python discovery, working-directory
+and import-path handling. There are no CMD wrappers or duplicate launch scripts.
+The PyTorch installer selects official CPU/CUDA
 wheels before installing the package. It uses the primary download host when an
 alternate official hostname cannot resolve.
 
@@ -94,3 +96,15 @@ Before changing capture/inference behavior, run the smoke check and the
 integration scripts listed in the root README. Use a separate server port for
 tests. Never commit environments, logs, model binaries, camera frames, or local
 credentials.
+
+## Server audio
+
+`audio.py` owns one shared PortAudio input via sounddevice, opened on the first
+explicit listener subscription and released on the last unsubscribe. A bounded
+queue per listener drops older audio under load. `web/routes/audio.py` checks
+same-origin and an existing session, binds listening to its current generation,
+and allows it only while that session's server camera is running. Its sender and
+receiver run together so disconnects and source/Stop changes release the input.
+`web/static/audio.js` schedules PCM buffers through Web Audio after a user gesture;
+`viewer.js` provides shared native/fallback fullscreen behavior for both pages.
+Audio is independent of model processing and is not synchronized with CV frames.

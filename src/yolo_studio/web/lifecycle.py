@@ -2,16 +2,21 @@
 import asyncio
 from contextlib import asynccontextmanager
 from ..engine import Sessions
+from ..audio import AudioHub
 
 @asynccontextmanager
 async def lifespan(app):
     app.state.sessions = Sessions()
+    app.state.audio = AudioHub()
     async def cleanup():
         while True:
             await asyncio.sleep(15)
             await asyncio.to_thread(app.state.sessions.prune)
     task = asyncio.create_task(cleanup())
-    yield
-    task.cancel()
-    await asyncio.gather(task, return_exceptions=True)
-    await asyncio.to_thread(app.state.sessions.prune, True)
+    try:
+        yield
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        await app.state.audio.close()
+        await asyncio.to_thread(app.state.sessions.prune, True)

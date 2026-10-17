@@ -9,22 +9,24 @@ models rather than three. Models run sequentially on the same original frame.
 
 ### Browser dashboard
 
-Double-click `start-web.cmd` to start the Python server and open
+Run `.\start-web.ps1` in PowerShell to start the Python server and open
 **http://127.0.0.1:8765** in your browser. Select a source and click **Start
 preview**. Change settings, then click **Apply changes**. **Stop** releases the
 camera; closing the browser alone does not stop inference. Stop the server with
 Ctrl+C in its terminal. If the dashboard was launched in the background during
-initial setup, run `stop-web.cmd` first before restarting it with `start-web.cmd`.
-The existing desktop launchers still work.
+initial setup, run `stop-web.ps1` first before restarting it with `start-web.ps1`.
+The desktop viewer uses `start-desktop.ps1`.
+If scripts are blocked, use `powershell -NoProfile -ExecutionPolicy Bypass -File .\start-web.ps1`
+(or the corresponding command). No machine-wide policy change is required.
 
 ```powershell
-.\start-web.cmd
+.\start-web.ps1
 # Another port:
-.\start-web.cmd --port 9000
+.\start-web.ps1 -Port 9000
 # Server only, without automatically opening a browser:
-.\.venv-system\Scripts\python.exe -m yolo_studio --port 8765
+.\start-web.ps1 -NoBrowser
 # Optional access from devices on your trusted LAN:
-.\start-web.cmd --host 0.0.0.0
+.\start-web.ps1 -Bind 0.0.0.0
 ```
 
 With LAN listening enabled, browse to `http://LAPTOP_IP:8765`. The dashboard has
@@ -154,13 +156,13 @@ This uses the same `cloudflared` Quick Tunnel approach as
 
 ```powershell
 # Start the dashboard if it is not already running:
-.\start-web.cmd
+.\start-web.ps1
 # In another terminal, create a link-accessible HTTPS tunnel:
-.\start-tunnel.cmd
+.\start-tunnel.ps1
 # Optional email-PIN protection, if you decide to restrict access later:
-.\start-tunnel.cmd -AllowedEmail 'friend@example.com'
+.\start-tunnel.ps1 -AllowedEmail 'friend@example.com'
 # Alternate backend port:
-.\start-tunnel.cmd -Port 9000
+.\start-tunnel.ps1 -Port 9000
 ```
 
 Share the printed `https://...trycloudflare.com` address. No email login is
@@ -170,8 +172,8 @@ laptop, and the phone's private IP is not publicly exposed as a separate service
 
 Keep the laptop, dashboard, and tunnel running. Quick Tunnel URLs change when
 the tunnel restarts. Stop the background tunnel created during initial setup
-with `stop-tunnel.cmd`; for a foreground tunnel, use Ctrl+C in its terminal.
-Stop an existing background tunnel before running `start-tunnel.cmd` to avoid
+with `stop-tunnel.ps1`; for a foreground tunnel, use Ctrl+C in its terminal.
+Stop an existing background tunnel before running `start-tunnel.ps1` to avoid
 creating two tunnels. Stopping the tunnel does not stop the local dashboard.
 
 Tunnel headers from loopback are trusted for HTTPS origin checks and secure
@@ -269,12 +271,12 @@ an isolated test session and releases the camera after testing.
 
 ### Desktop preview
 
-Double-click `start.cmd`, or run:
+Run the desktop viewer from PowerShell:
 
 ```powershell
-cd C:\Dev\Projects\yolo-demo
-.\start.cmd --mode all --size n --device auto
-.\start.cmd --mode all --size s --device gpu --fullscreen
+# From your yolo-demo checkout:
+.\start-desktop.ps1 --mode all --size n --device auto
+.\start-desktop.ps1 --mode all --size s --device gpu --fullscreen
 ```
 
 Click the preview to give it keyboard focus. **F** toggles fullscreen. **Escape**
@@ -291,13 +293,13 @@ The demo uses the video feed at `http://10.12.48.195:8080/video`.
 
 ```powershell
 # Your phone address is the default for --phone:
-.\start-phone.cmd --fullscreen
+.\start-desktop.ps1 --phone --fullscreen
 # Equivalent, with explicit settings:
-.\start.cmd --phone http://10.12.48.195:8080 --mode all --size n --device auto
+.\start-desktop.ps1 --phone http://10.12.48.195:8080 --mode all --size n --device auto
 # Verify one phone frame without opening a window:
-.\start.cmd --phone --check
+.\start-desktop.ps1 --phone --check
 # Any explicit HTTP/RTSP video feed:
-.\start.cmd --source http://10.12.48.195:8080/video --fullscreen
+.\start-desktop.ps1 --source http://10.12.48.195:8080/video --fullscreen
 ```
 
 `--phone` accepts the base address and automatically adds `/video`; HTTP phone
@@ -339,17 +341,17 @@ are predownloaded by setup. Nano is the default for responsiveness.
 
 ```powershell
 # Object masks only, with labels/boxes hidden:
-.\start.cmd --mode segment --size small --no-boxes
+.\start-desktop.ps1 --mode segment --size small --no-boxes
 # Human skeletons:
-.\start.cmd --mode pose --size medium --device gpu
+.\start-desktop.ps1 --mode pose --size medium --device gpu
 # Largest object detector:
-.\start.cmd --mode detect --size x --device gpu --imgsz 640
+.\start-desktop.ps1 --mode detect --size x --device gpu --imgsz 640
 # Combined CPU demo with reduced inference resolution:
-.\start.cmd --mode all --size n --device cpu --imgsz 320
+.\start-desktop.ps1 --mode all --size n --device cpu --imgsz 320
 # Full HD capture in fullscreen, if the camera supports it:
-.\start.cmd --mode all --width 1920 --height 1080 --fullscreen
+.\start-desktop.ps1 --mode all --width 1920 --height 1080 --fullscreen
 # Custom local weights; the mode must match the task of the checkpoint:
-.\start.cmd --mode segment --model .\models\custom-seg.pt --device auto
+.\start-desktop.ps1 --mode segment --model .\models\custom-seg.pt --device auto
 ```
 
 ## Deploy / install on Windows
@@ -372,10 +374,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -Compute cpu
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -Compute gpu
 
 # List devices exposed by the installed PyTorch build:
-.\start.cmd --list-devices
+.\start-desktop.ps1 --list-devices
 
 # Launch, selecting GPU when available and otherwise CPU:
-.\start.cmd --mode all --size n --device auto
+.\start-desktop.ps1 --mode all --size n --device auto
 ```
 
 The setup script creates `.venv-system`, installs PyTorch and the dependencies,
@@ -413,7 +415,7 @@ where the alternate `download-r2.pytorch.org` hostname cannot be resolved.
 
 ## All runtime flags
 
-Run `.\start.cmd --help` for the same options from the program.
+Run `.\start-desktop.ps1 --help` for the same options from the program.
 
 | Flag                               | Default                  | Meaning                                                                      |
 | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
@@ -448,9 +450,9 @@ for images or for verifying a camera without opening the preview.
 .\.venv-system\Scripts\python.exe tests\smoke\check_setup.py --device cpu
 .\.venv-system\Scripts\python.exe tests\smoke\check_setup.py --device gpu
 # Verify combined inference on one webcam frame:
-.\start.cmd --mode all --device auto --check
+.\start-desktop.ps1 --mode all --device auto --check
 # Process a local file without a preview:
-.\start.cmd --mode all --source .\example.jpg --check
+.\start-desktop.ps1 --mode all --source .\example.jpg --check
 ```
 
 The automated sample checks use nano models. Larger sizes are selectable but
@@ -480,3 +482,58 @@ a single mode, or CUDA inference. If GPU memory runs out with a larger model,
 reduce its size or inference resolution, or select `--device cpu`.
 
 Model/task reference: [Ultralytics YOLO26](https://docs.ultralytics.com/models/yolo26).
+
+## Mobile browsers
+
+Open the Cloudflare HTTPS URL in Safari, Chrome, or Edge. **My camera** refers to
+the phone/tablet you are browsing on; **Phone** refers to the separate Android IP
+Webcam stream reachable by the server. Choose front/rear under **Phone camera
+preference** and apply. Choosing a specific device in **Camera on this device**
+overrides that preference; changing the preference clears the device selection.
+
+The layout adapts to narrow screens and landscape, with larger touch targets,
+readable form fields, larger Start/Stop buttons, and safe-area spacing.
+Fullscreen uses the native browser API when supported and fills the page when
+it is unavailable. Tap Fullscreen again to leave the fallback view. Keep the
+browser tab active while capturing; mobile operating systems can pause camera
+capture or networking in the background. Listening stops when the tab is hidden.
+
+## Server-camera audio
+
+Open **Server camera**, start the video, select **Server microphone**, and tap
+**Listen**. Use **Mute** to stop. Listening is off by default and stops on Stop,
+source/configuration changes, disconnection, or page backgrounding. A new Listen
+tap resumes it. The server microphone may be separate from the selected webcam;
+select the correct Windows input device. Microphone access for desktop apps must
+be allowed in Windows Privacy & security > Microphone settings.
+
+Audio travels as mono PCM16 over a separate same-origin WebSocket, using 16 kHz
+when the hardware supports it and the input's native rate otherwise (about
+32 KB/s at 16 kHz, plus transport overhead). It bypasses inference, uses bounded
+buffers, and discards stale audio rather than growing a backlog. This is listening
+only: browser microphone upload, phone/RTSP audio extraction, recording, and exact
+audio/video synchronization are not provided. Processed video can lag behind audio.
+
+Listeners share one microphone capture. Different sessions can listen to the same
+input; selecting a different microphone while another listener is using one gives
+an explanatory error. The last listener leaving releases the input. Anyone using
+the public link can select the server camera and listen, as with the existing
+link-accessible camera controls. Use the optional tunnel email restriction if you
+want to restrict access.
+
+## PowerShell command reference
+
+| Command | Purpose / options |
+| --- | --- |
+| `setup.ps1` | `-Compute cpu/gpu`, `-CudaIndex cu128`, `-SkipCheck` |
+| `start-web.ps1` | `-Port 8765`, `-Bind 127.0.0.1`, `-NoBrowser` |
+| `start-desktop.ps1` | Forwards the Python desktop flags listed above, including `--phone URL`, `--fullscreen`, `--help` |
+| `start-tunnel.ps1` | `-Port 8765`, optional `-AllowedEmail friend@example.com` |
+| `stop-web.ps1` | Stop a previously recorded background dashboard; foreground uses Ctrl+C |
+| `stop-tunnel.ps1` | Stop a previously recorded background tunnel; foreground uses Ctrl+C |
+
+The former `start-phone.cmd` was only `start --phone`, not a separate server or
+phone deployment. Its replacement is `start-desktop.ps1 --phone [URL]`. All CMD
+launchers and duplicate script implementations were removed. Python installer,
+benchmark, and application code remain Python; PowerShell handles Windows setup
+and process entry points.

@@ -9,7 +9,7 @@ if (-not (Get-Command cloudflared -ErrorAction SilentlyContinue)) {
 try {
     $null = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/" -UseBasicParsing -TimeoutSec 5
 } catch {
-    throw "YOLO Studio is not reachable at http://127.0.0.1:$Port. Start start-web.cmd first."
+    throw "YOLO Studio is not reachable at http://127.0.0.1:$Port. Start start-web.ps1 first."
 }
 Write-Host 'Starting a Cloudflare Quick Tunnel for YOLO Studio.'
 Write-Host 'Share the HTTPS URL printed below. Keep this window open; Ctrl+C stops sharing.'

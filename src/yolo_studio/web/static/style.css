@@ -700,3 +700,73 @@ footer {
   text-decoration: none;
   font-size: 12px;
 }
+
+/* Audio controls live beside the preview, independent of session settings. */
+.audio-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px;
+  margin-top: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.audio-panel label { margin: 0; min-width: 0; }
+.audio-panel button { min-height: 44px; }
+.audio-panel p { grid-column: 1 / -1; margin: 0; }
+.viewer.expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  max-width: none;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}
+body.viewer-expanded { overflow: hidden; }
+.viewer.expanded .viewer-bar { padding-top: max(14px, env(safe-area-inset-top)); }
+.viewer.expanded .viewer-footer { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+@media (pointer: coarse) {
+  button, select, input[type="number"], input[type="text"] { min-height: 44px; }
+  input[type="range"] { min-height: 36px; }
+  .feature-list label, .check-label { min-height: 44px; align-items: center; }
+  .feature-list input { flex-shrink: 0; }
+}
+@media (max-width: 600px) {
+  .topbar { padding: 0 max(12px, env(safe-area-inset-left)); gap: 8px; }
+  .brand { gap: 7px; font-size: 17px; }
+  .brand b { display: none; }
+  .top-right { gap: 8px; }
+  #operatorLink { font-size: 10px; }
+  .badge { padding: 7px 9px; font-size: 10px; white-space: nowrap; }
+  main { padding: 20px max(12px, env(safe-area-inset-left)) 0; }
+  .viewer { min-height: 210px; }
+  .viewer-bar, .viewer-footer { padding: 12px; font-size: 9px; letter-spacing: .5px; gap: 8px; }
+  .viewer-footer { padding-top: 24px; }
+  .viewer-footer > span { min-width: 0; overflow-wrap: anywhere; }
+  .viewer-footer button { flex-shrink: 0; }
+  .empty { padding: 45px 15px; }
+  .empty h2 { font-size: 18px; }
+  .controls { padding: 16px 12px; }
+  .controls-title { flex-wrap: wrap; gap: 8px; }
+  .field-row { gap: 12px; }
+  select, input[type="text"], input[type="number"] { font-size: 16px; max-width: 100%; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 18px; }
+  .metrics > div:nth-child(3) { border-left: 0; }
+  .actions { padding: 12px 0 max(12px, env(safe-area-inset-bottom)); }
+  .sizes { gap: 5px; }
+  .sizes button { min-width: 0; padding-left: 3px; padding-right: 3px; }
+  .presets { flex-wrap: wrap; }
+  .insights > div { flex-wrap: wrap; gap: 6px; }
+  footer { flex-wrap: wrap; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .viewer.expanded .viewer-bar { padding-top: 8px; }
+  .viewer.expanded .viewer-footer { padding-top: 8px; padding-bottom: 8px; }
+}

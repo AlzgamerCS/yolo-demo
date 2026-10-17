@@ -16,8 +16,7 @@ $("client").onchange = () => {
 };
 $("kind").onchange = reset;
 $("fullscreen").onclick = async () => {
-  if (document.fullscreenElement) await document.exitFullscreen();
-  else await $("viewer").requestFullscreen();
+  await toggleViewerFullscreen($("viewer"));
 };
 async function clients() {
   while (alive) {

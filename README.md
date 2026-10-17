@@ -17,9 +17,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -Compute cpu
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -Compute gpu
 
 # Start the browser dashboard:
-.\start-web.cmd
+.\start-web.ps1
 # In a second terminal, publish a temporary HTTPS link:
-.\start-tunnel.cmd
+.\start-tunnel.ps1
 ```
 
 Local dashboard: **http://127.0.0.1:8765**.
@@ -34,9 +34,40 @@ its installed PyTorch CPU/GPU build:
 uv pip install --python .venv-system\Scripts\python.exe -e .
 ```
 
-Root commands are stable entry points; their implementations live in `scripts/`.
-Use Ctrl+C for services started in a terminal. `stop-web.cmd` and
-`stop-tunnel.cmd` stop their recorded background instances.
+Root PowerShell scripts are the public commands. Shared Python invocation lives in
+`scripts/lib/python.ps1`; installer and benchmark tools live in `scripts/python/`.
+Use Ctrl+C for services started in a terminal. `stop-web.ps1` and
+`stop-tunnel.ps1` stop their recorded background instances.
+
+## Mobile and audio
+
+Open the public HTTPS tunnel URL on your phone. Choose **My camera**, select a
+front/rear camera preference, and press **Start preview**. Touch controls,
+portrait/landscape layouts, and fullscreen (with an in-page fallback) are supported.
+Phone camera access requires HTTPS or localhost; an HTTP LAN address cannot
+normally access a mobile browser's camera.
+
+For **Server camera**, start the preview, choose a **Server microphone**, and tap
+**Listen**. **Mute**, Stop, source changes, backgrounding the page, and disconnects
+stop listening. The microphone is captured on the backend laptop; browser/phone
+sources remain video-only. Audio and CV video are independent, so they may have
+different delays. Nothing is recorded.
+
+All Windows commands are PowerShell scripts. If Windows blocks script execution,
+run the same command with a per-process bypass, for example:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start-web.ps1
+```
+
+`start-phone.cmd` used to launch the desktop preview with `--phone`. It and the
+duplicate CMD wrappers have been removed. Use:
+
+```powershell
+.\start-desktop.ps1 --phone http://10.12.48.195:8080 --fullscreen
+.\start-web.ps1 -Port 8765 -NoBrowser
+.\start-tunnel.ps1 -Port 8765
+```
 
 ## Project layout
 
@@ -52,13 +83,14 @@ src/yolo_studio/       Installable Python application
   cli/                Web-server and desktop command implementations
   config.py           Validated per-session settings
   capture.py          Camera/network readers and browser frames
+  audio.py            Shared on-demand server microphone capture
   vision.py           Model loading, inference, and annotation
   engine.py           Inference workers and browser sessions
   paths.py            Packaged assets and writable runtime locations
   app.py              Compatibility ASGI import
   server.py           Compatibility web command
   desktop.py          Compatibility desktop command
-scripts/              Windows launch/setup/tunnel scripts
+scripts/              Shared PowerShell helper and Python maintenance tools
 scripts/python/       PyTorch installer and performance benchmark
 tests/                Smoke and integration checks
 docs/                 Usage reference and architecture notes
@@ -86,7 +118,10 @@ uv pip install --python .venv-system\Scripts\python.exe -e ".[dev]"
 In another terminal, run checks against that test server:
 
 ```powershell
+.\.venv-system\Scripts\python.exe -m unittest discover -s tests/unit -v
 .\.venv-system\Scripts\python.exe tests\smoke\check_setup.py --device cpu
+.\.venv-system\Scripts\python.exe tests\integration\test_mobile.py --port 8766
+.\.venv-system\Scripts\python.exe tests\integration\test_audio_frontend.py --port 8766
 .\.venv-system\Scripts\python.exe tests\integration\test_web_dashboard.py --port 8766 --browser
 .\.venv-system\Scripts\python.exe tests\integration\test_browser_camera.py --url http://127.0.0.1:8766 --browser
 .\.venv-system\Scripts\python.exe tests\integration\test_features_monitor.py --port 8766
@@ -94,7 +129,7 @@ In another terminal, run checks against that test server:
 
 Checks use synthetic/bundled sample images and isolated sessions. Browser QA
 screenshots are written to `runtime/artifacts/`. The desktop entry point is
-`python -m yolo_studio.desktop`; `start.cmd` and `start-phone.cmd` invoke it.
+`python -m yolo_studio.desktop`; `start-desktop.ps1` forwards its Python flags.
 The installed console commands are `yolo-studio` and `yolo-webcam`.
 Browser assets are included in built wheels, so installed distributions do not
 need a separate frontend checkout. Checkout runs store generated files in

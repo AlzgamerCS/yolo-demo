@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>YOLO Studio · Live vision</title>
     <link rel="stylesheet" href="/static/style.css" />
   </head>
@@ -83,6 +83,11 @@
               </button>
             </div>
           </div>
+          <div id="audioPanel" class="audio-panel" hidden>
+            <label>Server microphone<select id="audioDevice"><option value="">System default input</option></select></label>
+            <button id="listenAudio" type="button" class="secondary" aria-pressed="false" disabled>Listen</button>
+            <p id="audioStatus" class="hint" role="status">Start the server camera to listen. Audio is off by default.</p>
+          </div>
           <div class="metrics">
             <div>
               <span>CAPTURE</span><strong id="captureFps">—</strong
@@ -152,6 +157,10 @@
                   <option value="">Default camera</option>
                 </select></label
               >
+              <label id="facingField" hidden>Phone camera preference<select id="facingMode">
+                <option value="environment">Rear camera</option>
+                <option value="user">Front camera</option>
+              </select></label>
               <div id="cameraFields" class="field-row">
                 <label
                   >Camera index<input
@@ -383,6 +392,8 @@
         >
       </footer>
     </main>
+    <script src="/static/viewer.js" defer></script>
+    <script src="/static/audio.js" defer></script>
     <script src="/static/app.js" defer></script>
   </body>
 </html>
