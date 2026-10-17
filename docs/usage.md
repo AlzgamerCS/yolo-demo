@@ -284,6 +284,53 @@ leaves fullscreen; in windowed mode it quits. **Q** always quits. You can also
 close the window. Resizing and fullscreen preserve the source aspect ratio:
 black borders fill unused space without stretching or cropping the image.
 
+### Desktop configuration file
+
+`start-desktop.ps1` automatically reads `config/desktop.toml` from the checkout.
+Edit the file and restart the viewer to apply settings. It configures the desktop
+OpenCV window; web dashboard settings remain separate.
+
+```toml
+[desktop]
+mode = "all"          # detect, segment, pose, all
+size = "n"            # n, s, m, l, x
+device = "auto"       # auto, cpu, gpu, cuda:0, or a GPU index as a string
+imgsz = 480
+confidence = 0.35
+camera = 0
+fullscreen = false
+no_boxes = false
+window_width = 1280
+window_height = 720
+```
+
+The supplied file also documents capture `width`/`height`, optional `phone` or
+`source`, and custom `model` weights. Use only one of `phone` and `source`; omit
+both to use the webcam. File paths in TOML are relative to the TOML file's folder,
+so a clip in the repository's `videos/` folder is `source = "../videos/clip.mp4"`.
+Use forward slashes or TOML single-quoted strings for Windows paths. Do not commit
+camera passwords in stream URLs; keep private configurations outside Git.
+
+```powershell
+# Use the default config:
+.\start-desktop.ps1
+# Override individual settings for this run:
+.\start-desktop.ps1 --device cpu --mode pose --windowed --boxes
+# Replace a configured phone/file source with the webcam:
+.\start-desktop.ps1 --webcam --camera 0
+# Use a different settings file:
+.\start-desktop.ps1 --config C:\private\desktop.toml
+# Ignore configuration files:
+.\start-desktop.ps1 --no-config
+```
+
+Precedence is built-in defaults, then the selected file, then explicit CLI flags.
+`--source` and `--phone` replace the source specified in the file. The default
+file is optional when running an installed package without a checkout; an explicit
+`--config` path must exist. Supported TOML keys match the Python flags with
+underscores (`window_width`, `no_boxes`). Actions such as `check` and `list_devices`
+are CLI-only. Unknown keys, wrong types, and invalid parameter values are rejected.
+
 ## Android IP Webcam input
 
 Start the camera server in IP Webcam on Android, and connect the phone and

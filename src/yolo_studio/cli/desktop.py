@@ -7,14 +7,19 @@ import cv2
 import torch
 from ..capture import DEFAULT_PHONE, network_url, open_network_stream
 from ..vision import SIZES, resolve_device, load_models, process_frame, fit_frame
+from ..desktop_config import DEFAULT_CONFIG, parse_desktop_args
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    config_group = parser.add_mutually_exclusive_group()
+    config_group.add_argument('--config', metavar='PATH', help=f'Desktop TOML settings file; automatically loads {DEFAULT_CONFIG} when present')
+    config_group.add_argument('--no-config', action='store_true', help='Ignore settings files and use built-in defaults plus CLI flags')
     parser.add_argument('--mode', choices=['detect', 'segment', 'pose', 'all'], default='all', help='all overlays object masks/boxes and human skeletons')
     parser.add_argument('--size', '--model-size', choices=list(SIZES) + list(SIZES.values()), default='n', help='Model size: n/s/m/l/x, from smallest to largest')
     parser.add_argument('--model', help='Custom local .pt weights; requires a single matching --mode')
     parser.add_argument('--camera', type=int, default=0, help='Webcam index')
     source_group = parser.add_mutually_exclusive_group()
+    source_group.add_argument('--webcam', action='store_true', help='Use the webcam even if the config specifies phone/source')
     source_group.add_argument('--source', help='Local image/video or HTTP/HTTPS/RTSP stream instead of webcam')
     source_group.add_argument('--phone', nargs='?', const=DEFAULT_PHONE, metavar='URL',
                               help='Android IP Webcam base URL; adds /video to a base address. Without URL uses ' + DEFAULT_PHONE)
@@ -24,9 +29,11 @@ def build_parser():
     parser.add_argument('--imgsz', type=int, default=480, help='Inference input size; separate from camera/display resolution')
     parser.add_argument('--device', default='auto', help='auto, cpu, gpu, cuda:N, or N (single CUDA GPU index)')
     parser.add_argument('--fullscreen', action='store_true', help='Start fullscreen; F toggles, Escape leaves fullscreen')
+    parser.add_argument('--windowed', dest='fullscreen', action='store_false', default=argparse.SUPPRESS, help='Override fullscreen from the config')
     parser.add_argument('--window-width', type=int, default=1280, help='Initial window width')
     parser.add_argument('--window-height', type=int, default=720, help='Initial window height')
     parser.add_argument('--no-boxes', action='store_true', help='Hide bounding boxes/labels; keep masks and skeletons')
+    parser.add_argument('--boxes', dest='no_boxes', action='store_false', default=argparse.SUPPRESS, help='Show boxes even if disabled in the config')
     parser.add_argument('--check', action='store_true', help='Process one frame without opening a preview')
     parser.add_argument('--list-devices', action='store_true', help='Report PyTorch CPU/CUDA availability and exit')
     return parser
@@ -34,16 +41,12 @@ def build_parser():
 
 def main():
     parser = build_parser()
-    args = parser.parse_args()
+    args = parse_desktop_args(parser)
     if args.list_devices:
         print(f'PyTorch {torch.__version__}; CPU: available; CUDA build: {torch.version.cuda}; CUDA available: {torch.cuda.is_available()}')
         for index in range(torch.cuda.device_count()):
             print(f'GPU {index}: {torch.cuda.get_device_name(index)}')
         return
-    if not 0 <= args.confidence <= 1 or min(args.imgsz, args.width, args.height, args.window_width, args.window_height) <= 0:
-        parser.error('confidence must be between 0 and 1; all dimensions must be positive')
-    if args.model and args.mode == 'all':
-        parser.error('--model requires --mode detect, segment, or pose')
     device = resolve_device(args.device)
     models = load_models(args.mode, args.size, args.model)
     stream_url = network_url(args.phone, phone=True) if args.phone else (network_url(args.source) if args.source else None)

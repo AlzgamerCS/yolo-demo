@@ -37,6 +37,9 @@ flowchart LR
 - `cli/server.py` and `cli/desktop.py` implement the two command-line interfaces.
   Root package `app.py`, `server.py`, and `desktop.py` remain compatibility entry
   points for existing commands and integrations.
+- `desktop_config.py` reads and validates TOML defaults from `config/desktop.toml`
+  or an explicit `--config` file, then applies CLI overrides. Local paths in the
+  file resolve relative to that file; desktop settings do not affect web sessions.
 - `paths.py` locates packaged assets and writable runtime directories independently
   of the shell's working directory.
 

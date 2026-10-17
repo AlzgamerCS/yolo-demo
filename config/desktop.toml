@@ -1,0 +1,27 @@
+# Loaded automatically by start-desktop.ps1. CLI flags override these settings.
+# This file configures the standalone desktop viewer, not the browser dashboard.
+[desktop]
+
+# CV: detect, segment, pose, all. Model size: n, s, m, l, x.
+mode = "detect"
+size = "x"
+# Runtime: auto, cpu, gpu, cuda:0 (or another GPU index).
+device = "gpu"
+imgsz = 480
+confidence = 0.35
+no_boxes = false
+
+# Webcam by default. Set either phone OR source to use another input.
+camera = 0
+width = 1280
+height = 720
+# phone = "http://10.12.48.195:8080"
+# source = "../videos/sample.mp4"
+# source = "rtsp://camera-host:554/stream"
+# Custom weights require mode = "detect", "segment", or "pose".
+# model = "../runtime/models/custom.pt"
+
+# Keep the original image aspect ratio when fitting the window.
+fullscreen = false
+window_width = 1280
+window_height = 720

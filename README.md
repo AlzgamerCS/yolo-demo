@@ -69,6 +69,17 @@ duplicate CMD wrappers have been removed. Use:
 .\start-tunnel.ps1 -Port 8765
 ```
 
+The desktop viewer automatically reads [config/desktop.toml](config/desktop.toml).
+Edit its CV mode, model size, CPU/GPU device, camera/source, confidence, and window
+settings, then run `.\start-desktop.ps1`. Restart the viewer after editing.
+Command-line flags override the file:
+
+```powershell
+.\start-desktop.ps1 --device cpu --mode pose
+.\start-desktop.ps1 --config .\config\desktop.toml
+.\start-desktop.ps1 --no-config
+```
+
 ## Project layout
 
 ```text
@@ -92,6 +103,7 @@ src/yolo_studio/       Installable Python application
   desktop.py          Compatibility desktop command
 scripts/              Shared PowerShell helper and Python maintenance tools
 scripts/python/       PyTorch installer and performance benchmark
+config/desktop.toml   Default settings for the standalone desktop viewer
 tests/                Smoke and integration checks
 docs/                 Usage reference and architecture notes
 runtime/              Generated weights, logs, PID files, screenshots (ignored)
