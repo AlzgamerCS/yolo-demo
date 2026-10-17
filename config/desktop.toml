@@ -4,11 +4,11 @@
 
 # CV: detect, segment, pose, all. Model size: n, s, m, l, x.
 mode = "detect"
-size = "x"
+size = "m"
 # Runtime: auto, cpu, gpu, cuda:0 (or another GPU index).
-device = "gpu"
+device = "auto"
 imgsz = 480
-confidence = 0.35
+confidence = 0.4
 no_boxes = false
 
 # Webcam by default. Set either phone OR source to use another input.
