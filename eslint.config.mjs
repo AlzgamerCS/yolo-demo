@@ -10,12 +10,37 @@ export default [
   },
   {
     files: ["src/yolo_studio/web/static/app.js", "src/yolo_studio/web/static/monitor.js"],
-    languageOptions: { globals: { toggleViewerFullscreen: "readonly", serverAudio: "readonly" } },
+    languageOptions: {
+      globals: {
+        toggleViewerFullscreen: "readonly",
+        serverAudio: "readonly",
+        clientMicrophone: "readonly",
+        PCMPlayer: "readonly",
+      },
+    },
   },
   {
-    files: ["src/yolo_studio/web/static/audio.js", "src/yolo_studio/web/static/viewer.js"],
+    files: [
+      "src/yolo_studio/web/static/audio.js",
+      "src/yolo_studio/web/static/viewer.js",
+      "src/yolo_studio/web/static/client-audio.js",
+      "src/yolo_studio/web/static/pcm-player.js",
+    ],
     rules: {
-      "no-unused-vars": ["error", { varsIgnorePattern: "^(serverAudio|toggleViewerFullscreen)$" }],
+      "no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^(serverAudio|toggleViewerFullscreen|clientMicrophone|PCMPlayer)$" },
+      ],
+    },
+  },
+  {
+    files: ["src/yolo_studio/web/static/client-audio-worklet.js"],
+    languageOptions: {
+      globals: {
+        AudioWorkletProcessor: "readonly",
+        sampleRate: "readonly",
+        registerProcessor: "readonly",
+      },
     },
   },
 ];

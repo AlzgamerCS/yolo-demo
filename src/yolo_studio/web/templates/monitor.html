@@ -17,12 +17,12 @@
         <div>
           <div class="eyebrow">SERVER LAPTOP ONLY</div>
           <h1>Connected client cameras</h1>
-          <p>View cameras whose owners have enabled sharing with the server operator.</p>
+          <p>View all sharing clients together. Select one client for a larger view and audio.</p>
         </div>
       </div>
       <div class="monitor-controls">
         <label
-          >Client<select id="client">
+          >Focused client<select id="client">
             <option value="">No sharing clients connected</option>
           </select></label
         ><label
@@ -32,6 +32,17 @@
           </select></label
         >
       </div>
+      <div class="monitor-audio">
+        <button id="clientListen" class="secondary" type="button" disabled>Listen to client</button>
+        <p id="clientAudioState" class="hint" role="status">
+          Select a sharing client. Tap Listen to enable sound; only the focused client is played.
+        </p>
+      </div>
+      <section
+        id="clientGrid"
+        class="client-grid"
+        aria-label="All sharing client cameras"
+      ></section>
       <div class="viewer monitor-view" id="viewer">
         <img
           id="feed"
@@ -41,7 +52,10 @@
         />
         <div class="empty" id="empty">
           <h2>Waiting for a shared camera</h2>
-          <p>Client chooses My camera, enables operator sharing, and presses Start / apply.</p>
+          <p>
+            Client chooses My camera and presses Start. Video and microphone sharing are enabled by
+            default and can be switched off.
+          </p>
         </div>
         <div class="viewer-footer">
           <span id="status">No client selected</span
@@ -50,14 +64,16 @@
       </div>
       <p class="monitor-note">
         Raw video is the received browser feed, before CV. Processed video includes the selected
-        features. Sharing ends when the client stops or disables it. Nothing is recorded.
-        Camera/settings/frame buffers are isolated per browser profile; CPU, GPU memory and
-        bandwidth are shared. Multiple active sessions can reduce FPS. The same physical server
-        webcam may not allow concurrent captures.
+        features. Microphone audio is available for the focused client when they allow browser
+        permission and leave sharing enabled. Sharing ends when the client stops or disables it.
+        Nothing is recorded. Camera/settings/frame buffers are isolated per browser profile; CPU,
+        GPU memory and bandwidth are shared. Multiple active sessions can reduce FPS. The same
+        physical server webcam may not allow concurrent captures.
       </p>
       <div class="error" id="error" hidden role="alert"></div>
     </main>
     <script src="/static/viewer.js"></script>
+    <script src="/static/pcm-player.js"></script>
     <script src="/static/monitor.js"></script>
   </body>
 </html>

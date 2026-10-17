@@ -21,7 +21,8 @@ class Config(BaseModel):
     url: str = Field(default=DEFAULT_PHONE, max_length=2048)
     mode: Literal["raw", "detect", "segment", "pose", "all", "custom"] = "all"
     features: list[Literal["detect", "segment", "pose"]] | None = Field(default=None, max_length=3)
-    share_with_operator: bool = False
+    share_with_operator: bool = True
+    share_audio: bool = True
     size: Literal["n", "s", "m", "l", "x"] = "n"
     device: str = Field(default="auto", max_length=24)
     imgsz: Literal[320, 480, 640, 960, 1280] = 480
@@ -54,3 +55,8 @@ class Config(BaseModel):
             if not network_url(self.url.strip(), phone=self.source == "phone"):
                 raise ValueError("Use a direct HTTP/HTTPS/RTSP video stream URL.")
         return self
+
+
+class ClientSharing(BaseModel):
+    share_with_operator: bool
+    share_audio: bool

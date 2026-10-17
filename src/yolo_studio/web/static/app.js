@@ -12,6 +12,8 @@ let liveSocket = null,
   renderBusy = false,
   pendingFrame = null,
   displayTimes = [];
+let sharingQueue = Promise.resolve(),
+  sharingRevision = 0;
 function connectLive() {
   if (!polling) return;
   liveSocket = new WebSocket(
@@ -100,6 +102,7 @@ function markDirty() {
 }
 function pickSource(value, changed = true) {
   if (changed) serverAudio.stop();
+  if (changed) clientMicrophone.stop();
   source = value;
   document.querySelectorAll("[data-source]").forEach((button) => {
     const selected = button.dataset.source === value;
@@ -114,6 +117,7 @@ function pickSource(value, changed = true) {
   $("audioPanel").hidden = value !== "laptop";
   $("shareField").hidden = value !== "browser";
   $("shareHint").hidden = value !== "browser";
+  $("clientAudioField").hidden = value !== "browser";
   $("sourceHint").textContent =
     value === "laptop"
       ? "Camera attached to the backend laptop."
@@ -149,7 +153,8 @@ function config() {
     imgsz: Number($("imgsz").value),
     confidence: Number($("confidence").value) / 100,
     boxes: true,
-    share_with_operator: source === "browser" && $("shareOperator").checked,
+    share_with_operator: $("shareOperator").checked,
+    share_audio: $("shareAudio").checked,
     width,
     height,
     preview_width: Number($("previewWidth").value),
@@ -177,6 +182,8 @@ function hydrate(c) {
   $("imgsz").value = c.imgsz;
   $("confidence").value = Math.round(c.confidence * 100);
   $("shareOperator").checked = !!c.share_with_operator;
+  $("shareAudio").checked = c.share_audio ?? true;
+  $("shareAudio").disabled = !$("shareOperator").checked;
   $("captureSize").value = `${c.width},${c.height}`;
   $("previewWidth").value = c.preview_width;
   $("quality").value = c.quality;
@@ -322,6 +329,7 @@ async function fullscreen() {
   }
 }
 function stopBrowserCamera() {
+  clientMicrophone.stop();
   uploadToken++;
   if (browserStream) browserStream.getTracks().forEach((track) => track.stop());
   browserStream = null;
@@ -432,8 +440,15 @@ $("configForm").addEventListener("submit", async (event) => {
     const settings = config();
     if (settings.source === "browser") await startBrowserCamera();
     else stopBrowserCamera();
+    await sharingQueue;
+    settings.share_with_operator = $("shareOperator").checked;
+    settings.share_audio = $("shareAudio").checked;
     const state = await api("/api/config", settings);
-    if (settings.source === "browser") uploadFrames(state.generation, settings);
+    if (settings.source === "browser") {
+      uploadFrames(state.generation, settings);
+      if ($("shareOperator").checked && $("shareAudio").checked)
+        clientMicrophone.start(state.generation);
+    }
     $("dirtyLabel").textContent = "Settings applied";
     $("dirtyLabel").classList.remove("dirty");
     renderStatus(state);
@@ -454,6 +469,33 @@ $("stop").addEventListener("click", async () => {
     showError(error.message);
   }
 });
+async function updateClientSharing() {
+  const revision = ++sharingRevision;
+  const sharing = {
+    share_with_operator: $("shareOperator").checked,
+    share_audio: $("shareAudio").checked,
+  };
+  $("shareAudio").disabled = !sharing.share_with_operator;
+  if (!sharing.share_with_operator || !sharing.share_audio)
+    clientMicrophone.stop("Microphone muted. No microphone audio is being shared.");
+  // Preserve toggle order even if the connection is slow.
+  const update = sharingQueue.then(() => api("/api/sharing", sharing));
+  sharingQueue = update.catch(() => {});
+  try {
+    const state = await update;
+    if (
+      revision === sharingRevision &&
+      browserStream &&
+      sharing.share_with_operator &&
+      sharing.share_audio
+    )
+      clientMicrophone.start(state.generation);
+  } catch (error) {
+    showError(error.message);
+  }
+}
+$("shareOperator").addEventListener("change", updateClientSharing);
+$("shareAudio").addEventListener("change", updateClientSharing);
 $("fullscreen").addEventListener("click", fullscreen);
 document.addEventListener("keydown", (event) => {
   if (

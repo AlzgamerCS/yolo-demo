@@ -1,5 +1,6 @@
 """Local-only access to consenting clients and their frames."""
 
+import time
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
@@ -48,6 +49,11 @@ def operator_sessions(request: Request):
                         "features": engine.config.features,
                         "metrics": dict(engine.metrics),
                         "raw_ready": engine.raw_jpeg is not None,
+                        "audio_shared": engine.config.share_audio,
+                        "audio_ready": bool(
+                            engine.client_audio.packets
+                            and time.monotonic() - engine.client_audio.packets[-1][1] < 0.5
+                        ),
                     }
                 )
     return {"sessions": sessions}

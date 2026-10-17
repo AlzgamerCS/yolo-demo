@@ -14,7 +14,7 @@ flowchart LR
     Browser -->|Browser camera upload| Capture
     Worker --> Vision[vision.py: YOLO models]
     Vision --> Worker
-    Local[Local operator monitor] -->|Opt-in raw / processed frames| API
+    Local[Local operator monitor] -->|Shared raw / processed frames + audio| API
 ```
 
 ## Module boundaries
@@ -59,7 +59,7 @@ encoded output, and pending browser rendering buffers retain their latest frames
 HTTP upload/preview endpoints remain available as a WebSocket fallback.
 
 Operator viewing requires both a localhost hostname and loopback client address,
-plus the client's opt-in setting. Raw viewing reuses received JPEGs; annotated
+plus the client's enabled sharing setting (enabled by default). Raw viewing reuses received JPEGs; annotated
 viewing reuses processed output. Revocation/Stop blocks access immediately. Frames
 are held in memory and are not recorded.
 
@@ -111,3 +111,21 @@ receiver run together so disconnects and source/Stop changes release the input.
 `web/static/audio.js` schedules PCM buffers through Web Audio after a user gesture;
 `viewer.js` provides shared native/fallback fullscreen behavior for both pages.
 Audio is independent of model processing and is not synchronized with CV frames.
+
+## Client audio and multi-client monitor
+
+Each Engine owns a `ClientAudioBuffer` (`client_audio.py`). Browser capture uses
+`client-audio-worklet.js` to produce small mono PCM16 packets and `client-audio.js`
+to upload them on `/api/client-audio`, bound to its cookie and active generation.
+The relay validates the sample rate and packet size and retains at most eight
+packets per engine. Uploader ownership prevents a stale socket from clearing a
+replacement connection's buffer. Stop/configuration changes and sharing revocation
+clear the buffer; disconnects also clear microphone state.
+
+`/api/sharing` updates sharing flags without restarting the worker. Operator
+WebSockets `/api/operator/audio/{public_id}` require localhost/loopback and the
+current video/audio sharing flags. They forward only recent packets and close
+when sharing stops. `monitor.js` maintains one independently polled image per
+client, reuses that image's blob in the focused view, and uses `PCMPlayer` for
+one selected microphone. Client focus changes close the previous audio context
+and connection so audio from multiple clients is not mixed.

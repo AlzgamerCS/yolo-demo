@@ -9,6 +9,7 @@ import torch
 from fastapi import HTTPException
 
 from .capture import BrowserCapture, LatestCapture
+from .client_audio import ClientAudioBuffer
 from .config import Config
 from .vision import load_models, process_frame, resolve_device
 
@@ -31,6 +32,7 @@ class Engine:
         self.metrics = {}
         self.raw_jpeg = None
         self.raw_frame_id = 0
+        self.client_audio = ClientAudioBuffer()
         self.public_id = uuid.uuid4().hex
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
@@ -45,6 +47,7 @@ class Engine:
             self.config = config
             self.active = True
             self.generation += 1
+            self.client_audio.clear()
             self.phase, self.message = "starting", "Connecting to source…"
             self.jpeg = None
             self.raw_jpeg = None
@@ -57,6 +60,7 @@ class Engine:
                 self.reader.stop_event.set()
                 self.reader.ready.set()
             self.active = False
+            self.client_audio.clear()
             self.generation += 1
             self.phase, self.message = "stopping", "Releasing the camera…"
             self.jpeg = None
@@ -240,6 +244,7 @@ class Engine:
     def shutdown(self):
         with self.condition:
             self.closed = True
+            self.client_audio.clear()
             if self.reader:
                 self.reader.stop_event.set()
                 self.reader.ready.set()

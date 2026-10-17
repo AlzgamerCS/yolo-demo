@@ -49,13 +49,22 @@ normally access a mobile browser's camera.
 
 For **Server camera**, start the preview, choose a **Server microphone**, and tap
 **Listen**. **Mute**, Stop, source changes, backgrounding the page, and disconnects
-stop listening. The microphone is captured on the backend laptop; browser/phone
-sources remain video-only. Audio and CV video are independent, so they may have
-different delays. Nothing is recorded.
+stop listening. This microphone is captured on the backend laptop. The separate
+Phone/IP Webcam and network-stream sources remain video-only. Audio and CV video
+are independent, so they may have different delays. Nothing is recorded.
 Windows input choices omit duplicate legacy drivers. **Input level** shows the
 received microphone signal; **Test speaker** checks sound output in your browser.
 If the input meter stays flat while speaking, check the laptop's mic-mute key
 and Windows Sound input settings.
+
+For **My camera**, operator video viewing and microphone sharing are enabled by
+default. Starting the preview requests camera/microphone permission in the browser;
+denied microphone permission leaves video working. Uncheck **Share microphone**
+to mute, or uncheck operator viewing to stop both types of sharing immediately.
+The backend laptop's **http://127.0.0.1:8765/monitor** displays all sharing clients
+in a grid. Focus a client and click **Listen to client** for that microphone;
+**Mute client audio** stops playback. Only the focused client's sound plays.
+The monitor remains available only on the server laptop.
 
 All Windows commands are PowerShell scripts. If Windows blocks script execution,
 run the same command with a per-process bypass, for example:
@@ -99,6 +108,7 @@ src/yolo_studio/       Installable Python application
   config.py           Validated per-session settings
   capture.py          Camera/network readers and browser frames
   audio.py            Shared on-demand server microphone capture
+  client_audio.py     Bounded per-client microphone relay buffers
   vision.py           Model loading, inference, and annotation
   engine.py           Inference workers and browser sessions
   paths.py            Packaged assets and writable runtime locations
@@ -160,6 +170,7 @@ In another terminal, run checks against that test server:
 .\.venv-system\Scripts\python.exe -m unittest discover -s tests/unit -v
 .\.venv-system\Scripts\python.exe tests\smoke\check_setup.py --device cpu
 .\.venv-system\Scripts\python.exe tests\integration\test_mobile.py --port 8766
+.\.venv-system\Scripts\python.exe tests\integration\test_client_monitor.py --port 8766
 .\.venv-system\Scripts\python.exe tests\integration\test_audio_frontend.py --port 8766
 .\.venv-system\Scripts\python.exe tests\integration\test_web_dashboard.py --port 8766 --browser
 .\.venv-system\Scripts\python.exe tests\integration\test_browser_camera.py --url http://127.0.0.1:8766 --browser

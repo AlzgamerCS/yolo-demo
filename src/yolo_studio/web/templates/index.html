@@ -175,13 +175,24 @@
               /></label>
               <p id="sourceHint" class="hint">Camera attached to the laptop running this server.</p>
               <label id="shareField" class="check-label" hidden
-                ><input id="shareOperator" type="checkbox" /> Allow the server operator to view my
-                camera</label
+                ><input id="shareOperator" type="checkbox" checked /> Allow the server operator to
+                view my camera</label
               >
               <p id="shareHint" class="hint" hidden>
-                Optional: your raw and annotated video will appear in the server laptop’s local
-                client monitor. Nothing is recorded.
+                Sharing is on by default when you start My camera. Your raw/annotated video and
+                microphone can be received by the server operator. Uncheck sharing to stop it.
+                Nothing is recorded.
               </p>
+              <div id="clientAudioField" hidden>
+                <label class="check-label"
+                  ><input id="shareAudio" type="checkbox" checked /> Share microphone with the
+                  server operator</label
+                >
+                <p id="clientAudioStatus" class="hint" role="status">
+                  Microphone sharing starts with My camera, after browser permission. Uncheck to
+                  mute immediately.
+                </p>
+              </div>
             </fieldset>
             <fieldset>
               <legend><span>02</span> Vision model</legend>
@@ -329,6 +340,7 @@
     </main>
     <script src="/static/viewer.js" defer></script>
     <script src="/static/audio.js" defer></script>
+    <script src="/static/client-audio.js" defer></script>
     <script src="/static/app.js" defer></script>
   </body>
 </html>

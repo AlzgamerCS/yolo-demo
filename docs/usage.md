@@ -108,18 +108,24 @@ to the same physical server webcam may be rejected by its driver.
 Open **http://127.0.0.1:8765/monitor** on the backend laptop, or click **Client
 monitor** in the local dashboard header.
 
-1. Your friend chooses **My camera**, allows browser camera access, and checks
-   **Allow the server operator to view my camera**.
-2. They click **Start / apply** and keep the page open.
-3. In the local monitor, select their client session.
-4. Choose **Raw incoming camera** or **Processed / annotated preview**. Use the
-   fullscreen button to display it on the laptop.
+1. Your friend chooses **My camera**. **Allow the server operator to view my
+   camera** and **Share microphone with the server operator** are checked by default.
+2. They click **Start / apply**, allow camera/microphone access, and keep the page open.
+   Microphone denial does not prevent video capture.
+3. The monitor shows all sharing clients in a preview grid. Choose a **Focused
+   client** or click a tile's Focus button for a larger view.
+4. Choose **Raw incoming camera** or **Processed / annotated preview** for all
+   previews. Fullscreen expands the focused view without changing aspect ratios.
+5. Tap **Listen to client** to play the focused client's microphone. **Mute client
+   audio** stops operator playback; choosing another client also mutes playback
+   until Listen is pressed again. This avoids mixing multiple microphones and
+   satisfies browser playback restrictions.
 
 Raw viewing reuses the incoming JPEG rather than re-encoding it or waiting for
 CV, so it can refresh independently of inference. Annotated viewing uses the
 same processed frames the client sees. Frames stay in memory; there is no
-recording. Sharing is off by default, and disabling it or stopping the camera
-immediately revokes monitor access. Anonymous client labels identify sessions;
+recording. Sharing is on by default after Start and browser permission. Disabling
+operator viewing or stopping the camera immediately revokes monitor access. Anonymous client labels identify sessions;
 no login names or camera permissions are inferred.
 
 The monitor page and APIs require a localhost hostname and loopback client
@@ -132,11 +138,14 @@ operator monitor, not a public multi-camera dashboard.
 - **Server camera** opens the webcam attached to the backend laptop.
 - **My camera** requests camera permission on the device viewing the page.
   A camera selector appears after permission is granted. The browser captures
-  video without audio, uploads JPEGs to the backend, and displays the returned
+  video, uploads JPEGs to the backend, and displays the returned
   inference preview over a persistent WebSocket. Uploads do not wait for an
   HTTP round trip per frame. When the upload buffer fills, newer capture attempts
   are skipped instead of building an unbounded queue. Stop, switching source, or leaving the page
-  releases the browser camera tracks.
+  releases the browser camera tracks. By default a separate microphone stream is
+  also requested and relayed to the local operator monitor. **Share microphone**
+  can be unchecked to mute immediately. Turning off operator viewing stops both
+  shared video and microphone audio; the client still sees their own preview.
 - **Phone** remains a server-side capture source: the backend laptop must be
   connected to the Android hotspot (or a network that can reach the phone).
   IP Webcam's default port is **8080**. Check its displayed address after
@@ -563,8 +572,8 @@ the mono stream so an inactive channel or phase cancellation cannot mute it.
 Audio travels as mono PCM16 over a separate same-origin WebSocket (about 96 KB/s
 at 48 kHz or 32 KB/s at 16 kHz, plus transport overhead). It bypasses inference, uses bounded
 buffers, and discards stale audio rather than growing a backlog. This is listening
-only: browser microphone upload, phone/RTSP audio extraction, recording, and exact
-audio/video synchronization are not provided. Processed video can lag behind audio.
+only: phone/RTSP audio extraction, recording, and exact audio/video synchronization
+are not provided. Browser microphone upload is a separate client-to-operator feature. Processed video can lag behind audio.
 
 Listeners share one microphone capture. Different sessions can listen to the same
 input; selecting a different microphone while another listener is using one gives
@@ -598,3 +607,30 @@ phone deployment. Its replacement is `start-desktop.ps1 --phone [URL]`. All CMD
 launchers and duplicate script implementations were removed. Python installer,
 benchmark, and application code remain Python; PowerShell handles Windows setup
 and process entry points.
+
+## Client microphone sharing and multi-client monitoring
+
+Client microphone audio uses a separate WebSocket and an AudioWorklet so CV and
+JPEG decoding do not block capture. Audio is mono PCM16, normally 16 kHz; the
+actual AudioContext sample rate is declared when connecting. Each client owns a
+bounded eight-packet memory buffer. Slow uploads skip audio instead of building
+an unlimited backlog, and the monitor ignores stale buffered audio. No sound is
+written to disk. Audio and annotated video are not synchronized.
+
+Camera and microphone sharing preferences default to enabled for new browser
+sessions, with visible checkboxes and status text before capture. The browser
+still requires the person's camera/microphone permission. Muting, disabling
+operator viewing, Stop, source/configuration changes, and leaving the page release
+the microphone. Changing sharing checkboxes applies immediately, without Apply
+or a model restart. If a microphone request is denied, the video continues and a
+status message explains how to retry. Microphone permission may need to be allowed
+for the public HTTPS hostname in browser site settings.
+
+All active sharing clients are shown in the monitor grid; the dropdown selects
+the large view and its audio. Non-focused tiles refresh less often to reduce work.
+One microphone plays at a time. Separate devices/browser profiles get separate
+sessions and buffers; tabs in one profile share a session. CPU, GPU memory, and
+bandwidth remain shared, and the 32-session registry limit is not a guarantee of
+32 simultaneous heavy CV streams. Both video and audio monitor endpoints require
+a localhost hostname and loopback client address and cannot be used through the
+public Cloudflare hostname.

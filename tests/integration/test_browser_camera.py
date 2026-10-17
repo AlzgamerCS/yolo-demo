@@ -90,7 +90,15 @@ def main():
             assert response.status_code == 200, (
                 "Forwarded HTTPS origin was rejected: " + response.text
             )
-            proxy.post(base + "/api/stop", json={}, headers=headers, timeout=10)
+            # The response cookie is Secure because this simulates HTTPS. The
+            # underlying test transport is HTTP, so requests will not send it
+            # automatically. Forward it explicitly when cleaning up that session.
+            cleanup_headers = headers | {
+                "Cookie": f"yolo_session={proxy.cookies.get('yolo_session')}"
+            }
+            proxy.post(base + "/api/stop", json={}, headers=cleanup_headers, timeout=10)
+            stopped = proxy.get(base + "/api/status", headers=cleanup_headers, timeout=10).json()
+            assert stopped["generation"] > response.json()["generation"]
         print(
             "PASS: uploaded JPEG decoding, separate viewer frames, independent Stop, stale generation rejection, forwarded HTTPS.",
             flush=True,

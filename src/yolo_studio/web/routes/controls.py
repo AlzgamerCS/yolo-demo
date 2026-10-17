@@ -4,7 +4,7 @@ import torch
 from fastapi import APIRouter, HTTPException, Request
 
 from ...capture import DEFAULT_PHONE
-from ...config import Config
+from ...config import ClientSharing, Config
 
 router = APIRouter()
 
@@ -48,3 +48,15 @@ def configure(config: Config, request: Request):
 def stop(request: Request):
     request.state.engine.stop()
     return {"ok": True}
+
+
+@router.post("/api/sharing")
+def sharing(settings: ClientSharing, request: Request):
+    engine = request.state.engine
+    with engine.condition:
+        engine.config = engine.config.model_copy(update=settings.model_dump())
+        if not settings.share_with_operator:
+            engine.raw_jpeg = None
+        if not settings.share_with_operator or not settings.share_audio:
+            engine.client_audio.clear()
+    return engine.status()

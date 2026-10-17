@@ -1,6 +1,7 @@
 """Integration checks against a running dashboard; no real camera required."""
 
 import argparse
+import math
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -77,11 +78,16 @@ def main():
         state = wait_running()
         assert state["metrics"]["counts"]["segment"] > 0 and state["metrics"]["counts"]["pose"] > 0
         first_id = state["frame_id"]
+        sampled_at = time.monotonic()
         time.sleep(1)
         state = status()
+        elapsed = time.monotonic() - sampled_at
         assert state["frame_id"] > first_id
         assert state["metrics"]["skipped_frames"] > 0, "Old captured frames were not skipped"
-        assert 0 < state["metrics"]["processing_fps"] < 8, state["metrics"]
+        # The smoothed startup metric can spike after warmup. Check actual
+        # published frames against the cap, allowing one boundary frame.
+        assert state["frame_id"] - first_id <= math.ceil(elapsed * config["max_fps"]) + 1
+        assert state["metrics"]["processing_fps"] > 0, state["metrics"]
         frame = http.get(base + "/api/frame", timeout=5)
         assert frame.status_code == 200 and frame.content.startswith(b"\xff\xd8")
         assert http.get(base + "/api/frame", params={"after": 10**12}, timeout=5).status_code == 204
